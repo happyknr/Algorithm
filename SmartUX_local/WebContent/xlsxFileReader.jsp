@@ -114,7 +114,9 @@ try
 		                	case XSSFCell.CELL_TYPE_ERROR:
 		                		value = cell.getErrorCellValue()+"";
 		                		break;
+		                		
 		                }
+		                //System.out.println("value " + value);
 		            }
 		            if(!value.equals("false"))
 		            {
@@ -169,13 +171,13 @@ try
 					tmp += tmpArr[j];
 					if(j != (tmpArr.length-1))
 					{
-						tmp += "/";
+						tmp += ";";
 					}
 					if(maxCol < tmpArr.length)
 					{
 						maxCol = tmpArr.length;
 					}
-					
+					//System.out.println();
 				}
 				testcaseList.add(tmp);
 			}
@@ -189,18 +191,20 @@ try
 		}
 	}
 	
-	for(int i = 0; i < allTestcaseList.size(); i++)
+	/* for(int i = 0; i < allTestcaseList.size(); i++)
 	{
 		//System.out.println(allTestcaseList.get(i));
 		ArrayList<String> tmpList = (ArrayList<String>)allTestcaseList.get(i).get("list");
 		Iterator<String> iter = tmpList.iterator();
+		System.out.println("----------- "+i+"---------------");
 		while(iter.hasNext())
 		{
-			String[] arr = iter.next().split("/");
-				//for(int j = 0; j < arr.length; j++)
-				//System.out.println(arr[j]);
+			String[] arr = iter.next().split(";");
+				for(int j = 0; j < arr.length; j++)
+				System.out.println(arr[j]);
 		}
-	} 
+		System.out.println("--------------------------");
+	}  */
 }
 catch(Exception e)
 {
@@ -233,6 +237,7 @@ catch(Exception e)
 			}
 			
 			document.getElementById("overviewDiv").style.display = 'none';
+			console.log(status);
 			document.getElementById(status).style.display = '';
 			document.getElementById("testCaseDiv").style.display = '';
 		}
@@ -328,7 +333,7 @@ catch(Exception e)
 			while(iter.hasNext())
 			{
 				out.print("<tr>");
-				String[] arr = iter.next().split("/");
+				String[] arr = iter.next().split(";");
 				for(int j = 1; j < arr.length; j++)
 				{
 					//System.out.println(arr[j]);
