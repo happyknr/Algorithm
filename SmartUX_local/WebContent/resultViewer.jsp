@@ -43,18 +43,20 @@ public File[] sortFileList(File[] files)
 
 <%
 	request.setCharacterEncoding("utf-8");
-	String packageName = request.getParameter("packageName");
+	String packageName = "com_skp_launcher"; //request.getParameter("packageName");
 	String testName = request.getParameter("testName");
 	String logFile = request.getParameter("logFile");
-	//System.out.println("build_FilePath : ["+build_FilePath+"] packageName : [" + packageName + "] testName : [" + testName + "] logFile : [" +logFile + "]");
+	System.out.println("packageName : [" + packageName + "] testName : [" + testName + "] logFile : [" +logFile + "]");
 	
-	String logFilePath = "C:\\Users\\knr\\workspace\\SmartUX_local\\WebContent\\SmartUX\\logs\\"; //application.getRealPath("/")+"../"+request.getParameter("logFilePath"); //★ 
+	String logFilePath = "C:\\Users\\knr\\git\\SmartUX_local\\WebContent\\SmartUX\\logs\\"; //application.getRealPath("/")+"../"+request.getParameter("logFilePath"); //★
+	String paramLogFilePath = "C:/Users/knr/git/SmartUX_local/WebContent/SmartUX/logs"; //로컬에서는 형태가 달라서 사용함. 운영에 필요없음
+	//String logFilePath = application.getRealPath("/")+"SmartUX\\logs\\"; //+packageName+"\\"+testName+"\\"+logFile;
 	//String[] logFileDepth = {};
 	
 
 	if(packageName == null || packageName == "")
 	{
-		packageName = "com_skt_skaf_l001mtm091";
+		packageName = "com_skp_launcher";
 	}
 	
 	HashMap<String, String> packageNameOption = new LinkedHashMap<String, String>();
@@ -111,6 +113,10 @@ public File[] sortFileList(File[] files)
 				}
 			}
 		}
+		
+		/* System.out.println(packageList.length);
+		System.out.println(testNameList.length);
+		System.out.println(logFileList.length); */
 	}
 	catch(Exception e)
 	{
@@ -161,7 +167,6 @@ public File[] sortFileList(File[] files)
 <%
 		}
 %>		 
-		 
 		$("#selPackageName").val("<%=packageName%>").attr("selected", "selected");
 		$("#selTestName").val("<%=testName%>").attr("selected", "selected");
 <%
@@ -183,7 +188,7 @@ public File[] sortFileList(File[] files)
 		{
 %>
 			<%-- var param = "C:/Users/knr/workspace/SmartUX_local/WebContent/SmartUX/logs/<%=packageName%>/<%=testName%>/<%=logFile%>/<%=logFile+".xlsx"%>"; --%>
-			var param = "C:/Users/knr/workspace/SmartUX_local/WebContent/SmartUX/logs/<%=packageName%>/<%=testName%>/<%=logFile%>/"; 
+			var param = "<%=paramLogFilePath%>/<%=packageName%>/<%=testName%>/<%=logFile%>/";
 			<%-- var param = "<%=logFilePath%>/<%=packageName%>/<%=testName%>/<%=logFile%>/"; --%>
 			document.parentFrameForm.filePath.value = param;
 			document.parentFrameForm.target = "fileReader";
@@ -257,17 +262,21 @@ public File[] sortFileList(File[] files)
 		<input type="hidden" name="testName" value="">
 		<input type="hidden" name="logFile" value="">
 		<select id="selPackageName">
-			<option selected disabled>Choose Service Name</option>
-<%
+			<!-- <option selected disabled>Choose Service Name</option> -->
+<%-- <%
 		for(int i = 0; i < packageList.length; i++)
 		{
 			{
+				if(packageList[i].equals(packageName))
+				{
 %>		
-			<option value="<%=packageList[i] %>"><%=packageNameOption.get(packageList[i]) %></option>
+			<option value="<%=packageList[i] %>" selected disabled><%=packageNameOption.get(packageList[i]) %></option>
 <%
+				}
 			}
 		}
-%>	
+%>	 --%>
+			<option value="<%=packageName %>" selected disabled><%=packageNameOption.get(packageName) %></option>
 		</select>
 	</form>
 	<!-- test name select box -->

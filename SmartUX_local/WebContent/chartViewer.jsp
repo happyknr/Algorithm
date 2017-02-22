@@ -1,8 +1,69 @@
+<%@page import="java.util.ArrayList"%>
 <%@page import="java.util.HashMap"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ include file="dbConnection.jsp" %>
 <%!
 	static final String PACKAGE_NAME = "com.skp.launcher";
+
+public ArrayList<HashMap<String, String>> selectValue(Connection conn, String tableName, String buildNumber, String buildCount, ArrayList<HashMap<String, String>> array)
+{
+	Statement stmt = null;
+	ResultSet rs = null;
+	String query = null;
+	HashMap<String, String> hashmap = null;
+	
+	try
+	{
+		stmt = conn.createStatement();
+		/* query = "select scenario, value, date \n";
+		query += "	from "+tableName+" \n";
+		query += "	where build_number = '"+buildNumber+"' \n";
+		if(buildDate != null && buildDate.length() > 0)
+		{
+			query += "		and date <= date_format('"+buildDate+"', '%Y-%m-%d %H:%i:%s') \n";
+		}
+		query += "	group by scenario \n";
+		query += "	order by date desc"; */
+		
+		query = "select scenario, value, date, build_count from "+tableName+"\n";
+		query += "  where build_number = '"+buildNumber+"' \n";
+		if(buildCount != null && buildCount.length() > 0)
+		{
+			query += "  and build_count = '"+buildCount+"' \n"; 
+		}
+		query += "  order by build_number, build_count";
+		
+		rs = stmt.executeQuery(query);
+		
+		while(rs.next())
+		{
+			hashmap = new HashMap<String, String>();
+			hashmap.put("scenario", rs.getString("scenario"));
+			hashmap.put("value", rs.getString("value"));
+			hashmap.put("date", rs.getString("date"));
+			hashmap.put("build_count", rs.getString("build_count"));
+			array.add(hashmap);
+		}
+	}
+	catch(Exception e)
+	{
+		e.printStackTrace();
+	}
+	finally
+	{
+		try
+		{
+			if(stmt != null) stmt.close();
+		}
+		catch(SQLException e2)
+		{
+			e2.printStackTrace();
+		}
+	}
+	
+	return array;
+			
+}
 %>
 <%
 	request.setCharacterEncoding("utf-8");
@@ -10,9 +71,14 @@
 	String scenario = request.getParameter("scenario");
 	String sdate = request.getParameter("sdate");
 	String edate = request.getParameter("edate");
+	String buildNumber = request.getParameter("buildNumber");
+	String buildCount = request.getParameter("buildCount");
 	String[] scenarioArr = {};
 	
-	System.out.println("chartViewer.jsp ] scenario : " + scenario);
+	/* buildnumber 해당 값 */
+	ArrayList<HashMap<String, String>> buildNumberList = new ArrayList<HashMap<String, String>>();
+	
+	//System.out.println("chartViewer.jsp ] scenario : " + scenario);
 	
 	if(scenario != null && scenario != "")
 	{
@@ -27,6 +93,11 @@
 	ResultSet rs = null;
 	
 	String deviceInfo = "";
+	
+	if(buildNumber != null && buildNumber.length() > 0)
+	{
+		selectValue(conn, tableName, buildNumber, buildCount, buildNumberList);
+	}
 	
 %>
 <html>
@@ -275,7 +346,7 @@
     			}
     			else
     			{
-    				System.out.println("chart data is null");
+    				//System.out.println("chart data is null");
     			}
     		}
     	 	catch(Exception e)
@@ -318,6 +389,7 @@
 		{
 		%>
 			document.getElementById("chart_div").style.display = "";
+			document.getElementById("tableDiv").style.display = "";
 		<%
 		}
 		%>
@@ -325,7 +397,28 @@
 </script>
 </head>
 <body>
-<br/><br/>
 	<div id="chart_div" style="display: none;"></div>
+	
+	<div id="tableDiv" style="display: none;">
+		<table style="border-collapse:collapse; width:35%; font-size:14px;" border="1">
+			<tr style=" background: #efefef;">
+				<th width="33.3%">scenario</th>
+				<th width="33.3%">datetime</th>
+				<th width="33.3%">value</th>
+			</tr>
+			<%
+			for(int i = 0 ; i < buildNumberList.size(); i++)
+			{
+			%>
+			<tr>
+				<td align="center"><%=buildNumberList.get(i).get("scenario") %></td>
+				<td align="center">[<%=buildNumberList.get(i).get("build_count")%>]&nbsp;<%=buildNumberList.get(i).get("date") %></td>
+				<td align="center"><%=buildNumberList.get(i).get("value") %></td>
+			</tr>
+			<%
+			}
+			%>
+		</table>
+	</div>
 </body>
 </html>
