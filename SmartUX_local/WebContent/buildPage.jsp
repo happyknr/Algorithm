@@ -39,7 +39,7 @@
 				tmpMap = new LinkedHashMap<String, String>();
 				tmpMap.put("pull_request_id", rs.getString("pull_request_id"));
 				tmpMap.put("build_count", rs.getString("build_count"));
-				if(tableName.equals(UX_TABLE_NAME))
+				if(tableName.equals(UX_TABLE_NAME) && rs.getString("log_path") != null && rs.getString("log_path").length() > 0)
 				{
 					String log_Path = rs.getString("log_path");
 					//System.out.println(log_Path);
