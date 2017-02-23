@@ -25,7 +25,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 		query += "	group by scenario \n";
 		query += "	order by date desc"; */
 		
-		query = "select scenario, value, date, build_count from "+tableName+"\n";
+		query = "select scenario, round(value, 3) value, date, build_count from "+tableName+"\n";
 		query += "  where pull_request_id = '"+pullRequestId+"' \n";
 		if(buildCount != null && buildCount.length() > 0)
 		{
@@ -154,7 +154,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     				{
     					//---------------------------------
     					int on = 2;
-						sb.append(" SELECT TBL1.ROWNUM AS rownum	\n");
+						/* sb.append(" SELECT TBL1.ROWNUM AS rownum	\n");
 						for(int i = 1; i < scenarioArr.length; i++)
 						{
 							sb.append("		 , TBL"+i+".device_info AS device_info	\n");
@@ -220,6 +220,82 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 							{
 								sb.append(" LEFT JOIN 											\n");
 							}
+						}  */
+						sb.append(" SELECT TBL1.ROWNUM AS rownum	\n");
+						for(int i = 1; i < scenarioArr.length; i++)
+						{
+							sb.append("		 , TBL"+i+".device_info AS device_info	\n");
+							sb.append("		 , TBL"+i+".value AS value"+i+"	\n");
+							sb.append("      , TBL"+i+".date AS date"+i+"	\n");
+							sb.append("      , TBL"+i+".pull_request_id AS pull_request_id"+i+"	\n");
+							sb.append("      , ( SELECT MAX(value) FROM "+tableName+"	\n");
+							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"'	\n");
+							sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"'	\n");
+							sb.append("			AND pull_request_id != ''	\n");
+							if(sdate != null && sdate != "")
+							{
+								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
+							}
+							if(edate != null && edate != "")
+							{
+								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n");
+							}
+							sb.append("		)"+i+"_MAX    								\n");
+							sb.append("     , ( SELECT MIN(value) FROM "+tableName+" 			\n");
+							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"' 	\n");
+							sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"' 	\n");
+							sb.append("			AND pull_request_id != '' 	\n");
+							if(sdate != null && sdate != "")
+							{
+								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
+							}
+							if(edate != null && edate != "")
+							{
+								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n");
+							}
+							sb.append("			AND value != 0 						\n");
+							sb.append("		) "+i+"_MIN    								\n");
+						}
+						sb.append("	FROM                                              	\n");
+						for(int i = 1; i < scenarioArr.length; i++)
+						{
+							sb.append("	(                                               \n");
+							sb.append("		SELECT @ROWNUM"+i+" := @ROWNUM"+i+" +1 AS ROWNUM	\n");
+							sb.append("			 , "+tableName+".device_info                               	\n");
+							sb.append("			 , "+tableName+".value                               	\n");
+							sb.append("			 , "+tableName+".date                                	\n");
+							sb.append("      	 , "+tableName+".pull_request_id				\n");
+							sb.append("			FROM "+tableName+", (SELECT @ROWNUM"+i+" := 0) R      	\n");
+							sb.append(" 	, ( SELECT scenario, date, pull_request_id, MAX(BUILD_COUNT) build_count \n");
+	    					sb.append(" 		FROM "+tableName);
+	    					sb.append("         WHERE  PACKAGE_NAME='"+PACKAGE_NAME+"'  \n");
+	    					sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"' 	\n");
+	    					sb.append(" 					AND pull_request_id != ''  \n");
+	    					if(sdate != null && sdate != "")
+	    					{
+	    						sb.append("		AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
+	    					}
+	    					if(edate != null && edate != "")
+	    					{
+	    						sb.append("		AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n");
+	    					}
+	    					sb.append("         GROUP by pull_request_id  \n");
+	    					sb.append("     ) "+tableName+"2  \n");
+	    					sb.append("	WHERE "+tableName+"2.pull_request_id = "+tableName+".pull_request_id  \n");
+	    					sb.append("		AND "+tableName+"2.build_count = "+tableName+".build_count  \n");
+	    					sb.append("		AND "+tableName+"2.SCENARIO = "+tableName+".SCENARIO  \n");
+	    					sb.append("		GROUP BY "+tableName+".pull_request_id  \n");
+	    					sb.append("	ORDER BY "+tableName+".date ASC , "+tableName+".build_count desc \n");
+							sb.append("	) TBL"+i+"                                      \n");
+							if(on == i)
+							{
+								sb.append("	ON	TBL"+(i-1)+".ROWNUM = TBL"+i+".ROWNUM      \n");
+								on++;
+							}
+							if(i < scenarioArr.length-1)
+							{
+								sb.append(" LEFT JOIN 											\n");
+							}
 						}
     					//---------------------------------
     				}
@@ -256,18 +332,26 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     					sb.append("		 ) minVal  \n");
     					sb.append("	FROM "+tableName+" \n");
     					sb.append("		, (SELECT @ROWNUM := 0) R  \n");
-    					sb.append("	WHERE PACKAGE_NAME='"+PACKAGE_NAME+"'  \n");
-    					sb.append("		AND SCENARIO = '"+ scenario.substring(0, scenario.indexOf("(")) +"'  \n");
+    					sb.append(" 	, ( SELECT scenario, date, pull_request_id, MAX(BUILD_COUNT) build_count \n");
+    					sb.append(" 		FROM "+tableName);
+    					sb.append("         WHERE  PACKAGE_NAME='"+PACKAGE_NAME+"'  \n");
+    					sb.append("			AND SCENARIO = '"+ scenario.substring(0, scenario.indexOf("(")) +"'  \n");
+    					sb.append(" 					AND pull_request_id != ''  \n");
     					if(sdate != null && sdate != "")
     					{
-    						sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
+    						sb.append("		AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
     					}
     					if(edate != null && edate != "")
     					{
-    						sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n");
+    						sb.append("		AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n");
     					}
-    					sb.append("		AND pull_request_id != ''  \n");
-    					sb.append("	ORDER BY date ASC \n");
+    					sb.append("         GROUP by pull_request_id  \n");
+    					sb.append("     ) "+tableName+"2  \n");
+    					sb.append("	WHERE "+tableName+"2.pull_request_id = "+tableName+".pull_request_id  \n");
+    					sb.append("		AND "+tableName+"2.build_count = "+tableName+".build_count  \n");
+    					sb.append("		AND "+tableName+"2.SCENARIO = "+tableName+".SCENARIO  \n");
+    					sb.append("		GROUP BY "+tableName+".pull_request_id  \n");
+    					sb.append("	ORDER BY "+tableName+".date ASC , "+tableName+".build_count desc \n");
     				}
     				
 	    			//System.out.println(sb.toString());	    			
