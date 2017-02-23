@@ -25,22 +25,24 @@
 		{
 			stmt = conn.createStatement();
 			
-			query = "select build_number, \n";
+			query = "select pull_request_id, \n";
 			if(tableName.equals(UX_TABLE_NAME))
 			{
 				query += " log_path,  \n";
 			}
-			query += " build_count from "+tableName+" where build_number != '' group by build_number, build_count order by date desc";
+			query += " build_count from "+tableName+" where pull_request_id != '' group by pull_request_id, build_count order by date desc";
+
 			rs = stmt.executeQuery(query);
-			
+
 			while(rs.next())
 			{
 				tmpMap = new LinkedHashMap<String, String>();
-				tmpMap.put("build_number", rs.getString("build_number"));
+				tmpMap.put("pull_request_id", rs.getString("pull_request_id"));
 				tmpMap.put("build_count", rs.getString("build_count"));
 				if(tableName.equals(UX_TABLE_NAME))
 				{
 					String log_Path = rs.getString("log_path");
+					//System.out.println(log_Path);
 					tmpMap.put("log_path", log_Path.substring(log_Path.lastIndexOf(DEFUALT_PATH)+DEFUALT_PATH.length(), log_Path.length()));
 				}
 				arrName.add(tmpMap);
@@ -78,7 +80,7 @@
 		{
 			stmt = conn.createStatement();
 			
-			query = "select distinct(scenario) scenario, round(avg(value), 3) average, count(scenario) from "+tableName+" where package_name = '"+PACKAGE_NAME+"' and build_number != '' group by scenario order by count(scenario) desc";
+			query = "select distinct(scenario) scenario, round(avg(value), 3) average, count(scenario) from "+tableName+" where package_name = '"+PACKAGE_NAME+"' and pull_request_id != '' group by scenario order by count(scenario) desc";
 			//System.out.println(tableName + " query : " + query);
 			rs = stmt.executeQuery(query);
 			
@@ -120,7 +122,7 @@
 <%
 	request.setCharacterEncoding("utf-8");
 	String tableName = request.getParameter("tableName");
-	String pBuildNumber = request.getParameter("build_number");
+	String pullRequestId = request.getParameter("pull_request_id");
 	String pBuildCount = request.getParameter("build_count");
 	
 	//System.out.println("buildNumber["+pBuildNumber+"]");
@@ -169,7 +171,7 @@
 	var previousTab = "";
 	
 	/* 차트 관련 iframe에 파라메터 넘기는 함수 */
-	function sendToChartViewer(frameName, tableName, scenario, sdate, edate, buildNumber, buildCount)
+	function sendToChartViewer(frameName, tableName, scenario, sdate, edate, pullRequestId, buildCount)
 	{
 		//alert("frameName : " + frameName + "\n tableName : " + tableName + "\n scenario : " + scenario + "\n buildNumber : " + buildNumber);
 		var frm = document.chartPageForm;
@@ -177,22 +179,27 @@
 		frm.scenario.value = scenario;
 		frm.sdate.value = sdate;
 		frm.edate.value = edate;
-		frm.buildNumber.value = buildNumber;
+		frm.pullRequestId.value = pullRequestId;
 		frm.buildCount.value = buildCount;
 		frm.target = frameName;//"exFrame";
 		frm.submit();
 	}
 	
 	/* 엑셀 결과 보고서 관련 iframe에 파라메터 넘기는 함수 */
-	function sendToResultViewer(frameName, value)
+	function sendToResultViewer(frameName, pLogPath, logFile)
 	{
 		//alert(frameName+", " + value);
 		var frm = document.resultForm;
-		var valueArr = value.split("\\"); //★
+		frm.pLogPath.value = pLogPath;
+		if(logFile != null)
+		{
+			frm.logFile.value = logFile.split("\\")[2];
+		}
+		/* var valueArr = value.split("\\"); //★
 		//alert(valueArr[0]+":"+valueArr[1]+":"+valueArr[2]);
 		frm.packageName.value = valueArr[0];
 		frm.testName.value = valueArr[1];
-		frm.logFile.value = valueArr[2];
+		frm.logFile.value = valueArr[2]; */
 		// frm.build_FilePath.value = value; 
 		frm.target = frameName;
 		frm.submit();
@@ -214,7 +221,7 @@
 		%>
 			sendToChartViewer('exFrame', 'e2e', $("#selE2eSubMenu option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
 			sendToChartViewer('axFrame', 'aging', $("#selAgingSubMenu option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
-			sendToResultViewer('uxFrame', $('#selUxBuildNumber option:selected').val());
+			sendToResultViewer('uxFrame', $('#selUxBuildNumber option:selected').val(), null);
 		<%
 		}
 		%>
@@ -290,7 +297,12 @@
 		
 		// UI탭 build number 클릭시 이벤트 
 		$("#selUxBuildNumber").change(function(){
-			sendToResultViewer('uxFrame', $('#selUxBuildNumber option:selected').val());
+			sendToResultViewer('uxFrame', $('#selUxBuildNumber option:selected').val(), null);
+		});
+		
+		// UI탭 build count 클릭시 이벤트 
+		$("#selUxBuildCount").change(function(){
+			sendToResultViewer('uxFrame', $('#selUxBuildNumber option:selected').val(), $('#selUxBuildCount option:selected').val());
 		});
  
 		/* 탭 클릭시 이벤트처리 */
@@ -370,15 +382,18 @@
 		<input type="hidden" name="scenario" value="">
 		<input type="hidden" name="sdate" value="">
 		<input type="hidden" name="edate" value="">
-		<input type="hidden" name="buildNumber" value="">
+		<input type="hidden" name="pullRequestId" value="">
 		<input type="hidden" name="buildCount" value="">
 	</form>
 	
 	<!-- 엑셀 결과 보고서 form (UI) -->
 	<form name="resultForm" action="resultViewer.jsp" method="POST">
-		<input type="hidden" name="packageName" value="">
-		<input type="hidden" name="testName" value="">
+		<input type="hidden" name="pLogPath" value="">
+		<input type="hidden" name="pLogPathCount" value="">
 		<input type="hidden" name="logFile" value="">
+		<!-- <input type="hidden" name="packageName" value="">
+		<input type="hidden" name="testName" value="">
+		 -->
 	</form>
 
 <div id="selBuildInfoDiv" style="height: 60px;">
@@ -388,23 +403,23 @@
 	<div id="exbuildNumberDiv" style="">
 		<!-- 필터 조회 -->
 		<select name="selExBuildNumber" id="selExBuildNumber">
-			<option disabled>BUILD NUMBER</option>
+			<option disabled>PULL_REQUEST_ID</option>
 			<%
 			String prevNumber = "";
 			for(int i = 0; i < exBuildInfoList.size(); i++)
 			{
-				if(!prevNumber.equals(exBuildInfoList.get(i).get("build_number")))
+				if(!prevNumber.equals(exBuildInfoList.get(i).get("pull_request_id")))
 				{
-					if(pBuildNumber != null && pBuildNumber.length() > 0 && pBuildNumber.equals(exBuildInfoList.get(i).get("build_number")))
+					if(pullRequestId != null && pullRequestId.length() > 0 && pullRequestId.equals(exBuildInfoList.get(i).get("pull_request_id")))
 					{
-						out.print("<option value='"+exBuildInfoList.get(i).get("build_number")+"' selected>"+exBuildInfoList.get(i).get("build_number")+"</option>");
+						out.print("<option value='"+exBuildInfoList.get(i).get("pull_request_id")+"' selected>"+exBuildInfoList.get(i).get("pull_request_id")+"</option>");
 					}
 					else
 					{
- 						out.print("<option value='"+exBuildInfoList.get(i).get("build_number")+"'>"+exBuildInfoList.get(i).get("build_number")+"</option>");
+ 						out.print("<option value='"+exBuildInfoList.get(i).get("pull_request_id")+"'>"+exBuildInfoList.get(i).get("pull_request_id")+"</option>");
 					}
 				}
-				prevNumber = exBuildInfoList.get(i).get("build_number");
+				prevNumber = exBuildInfoList.get(i).get("pull_request_id");
 			}
 			%>
 		</select>
@@ -415,11 +430,11 @@
 			{
 				if(pBuildCount != null && pBuildCount.length() > 0 && pBuildCount.equals(exBuildInfoList.get(i).get("build_count")))
 				{
-					out.print("<option class='"+exBuildInfoList.get(i).get("build_number")+"' value='"+exBuildInfoList.get(i).get("build_count")+"' selected>"+exBuildInfoList.get(i).get("build_count")+"</option>");
+					out.print("<option class='"+exBuildInfoList.get(i).get("pull_request_id")+"' value='"+exBuildInfoList.get(i).get("build_count")+"' selected>"+exBuildInfoList.get(i).get("build_count")+"</option>");
 				}
 				else
 				{
- 					out.print("<option class='"+exBuildInfoList.get(i).get("build_number")+"' value='"+exBuildInfoList.get(i).get("build_count")+"'>"+exBuildInfoList.get(i).get("build_count")+"</option>");
+ 					out.print("<option class='"+exBuildInfoList.get(i).get("pull_request_id")+"' value='"+exBuildInfoList.get(i).get("build_count")+"'>"+exBuildInfoList.get(i).get("build_count")+"</option>");
 				}
 			}
 			%>
@@ -430,23 +445,23 @@
  	<div id="axbuildNumberDiv" style="display: none;">
 		<!-- 필터 조회 -->
 		<select name="selAxBuildNumber" id="selAxBuildNumber">
-			<option disabled>BUILD NUMBER</option>
+			<option disabled>PULL_REQUEST_ID</option>
 			<%
 			prevNumber = "";
 			for(int i = 0; i < axBuildInfoList.size(); i++)
 			{
-				if(!prevNumber.equals(axBuildInfoList.get(i).get("build_number")))
+				if(!prevNumber.equals(axBuildInfoList.get(i).get("pull_request_id")))
 				{
-					if(pBuildNumber != null && pBuildNumber.length() > 0 && pBuildNumber.equals(axBuildInfoList.get(i).get("build_number")))
+					if(pullRequestId != null && pullRequestId.length() > 0 && pullRequestId.equals(axBuildInfoList.get(i).get("pull_request_id")))
 					{
-						out.print("<option value='"+axBuildInfoList.get(i).get("build_number")+"' selected>"+axBuildInfoList.get(i).get("build_number")+"</option>");
+						out.print("<option value='"+axBuildInfoList.get(i).get("pull_request_id")+"' selected>"+axBuildInfoList.get(i).get("pull_request_id")+"</option>");
 					}
 					else
 					{
- 						out.print("<option value='"+axBuildInfoList.get(i).get("build_number")+"'>"+axBuildInfoList.get(i).get("build_number")+"</option>");
+ 						out.print("<option value='"+axBuildInfoList.get(i).get("pull_request_id")+"'>"+axBuildInfoList.get(i).get("pull_request_id")+"</option>");
 					}				
 				}
-				prevNumber = axBuildInfoList.get(i).get("build_number");
+				prevNumber = axBuildInfoList.get(i).get("pull_request_id");
 			}
 			%>
 		</select>
@@ -457,11 +472,11 @@
 			{
 				if(pBuildCount != null && pBuildCount.length() > 0 && pBuildCount.equals(axBuildInfoList.get(i).get("build_count")))
 				{
-					out.print("<option class='"+axBuildInfoList.get(i).get("build_number")+"' value='"+axBuildInfoList.get(i).get("build_count")+"' selected>"+axBuildInfoList.get(i).get("build_count")+"</option>");
+					out.print("<option class='"+axBuildInfoList.get(i).get("pull_request_id")+"' value='"+axBuildInfoList.get(i).get("build_count")+"' selected>"+axBuildInfoList.get(i).get("build_count")+"</option>");
 				}
 				else
 				{
- 					out.print("<option class='"+axBuildInfoList.get(i).get("build_number")+"' value='"+axBuildInfoList.get(i).get("build_count")+"'>"+axBuildInfoList.get(i).get("build_count")+"</option>");
+ 					out.print("<option class='"+axBuildInfoList.get(i).get("pull_request_id")+"' value='"+axBuildInfoList.get(i).get("build_count")+"'>"+axBuildInfoList.get(i).get("build_count")+"</option>");
 				}
 			}
 			%>
@@ -472,23 +487,45 @@
 	<div id="uxbuildNumberDiv" style="display: none;">
 		<!-- 필터 조회 -->
 		<select name="selUxBuildNumber" id="selUxBuildNumber">
-			<option disabled>BUILD NUMBER</option>
+			<option disabled>PULL_REQUEST_ID</option>
 			<%
+			prevNumber = "";
+			String[] allLogPath = new String[uxBuildInfoList.size()];
+			String pull_request_id = uxBuildInfoList.get(0).get("pull_request_id");
+			for(int i = 0; i < uxBuildInfoList.size(); i++)
+			{
+				allLogPath[i] = "";
+				pull_request_id = uxBuildInfoList.get(i).get("pull_request_id");
+				
+				for(int j = 0; j < uxBuildInfoList.size(); j++)
+				{
+					if(pull_request_id.equals(uxBuildInfoList.get(j).get("pull_request_id")))
+					{
+						allLogPath[i] += uxBuildInfoList.get(j).get("log_path")+",";
+					}
+					
+					pull_request_id = uxBuildInfoList.get(i).get("pull_request_id");
+				}
+				System.out.println(allLogPath[i]);
+			}
+			
 			prevNumber = "";
 			for(int i = 0; i < uxBuildInfoList.size(); i++)
 			{
-				if(!prevNumber.equals(uxBuildInfoList.get(i).get("build_number")))
+				if(!prevNumber.equals(uxBuildInfoList.get(i).get("pull_request_id")))
 				{
-					if(pBuildNumber != null && pBuildNumber.length() > 0 && pBuildNumber.equals(uxBuildInfoList.get(i).get("build_number")))
+					if(pullRequestId != null && pullRequestId.length() > 0 && pullRequestId.equals(uxBuildInfoList.get(i).get("pull_request_id")))
 					{
-						out.print("<option value='"+uxBuildInfoList.get(i).get("log_path")+"' selected>"+uxBuildInfoList.get(i).get("build_number")+"</option>");
+						out.print("<option value='"+allLogPath[i]+"' selected>"+uxBuildInfoList.get(i).get("pull_request_id")+"</option>");
+/* 						out.print("<option value='"+uxBuildInfoList.get(i).get("log_path")+"' selected>"+uxBuildInfoList.get(i).get("pull_request_id")+"</option>"); */
 					}
 					else
 					{
-	 					out.print("<option value='"+uxBuildInfoList.get(i).get("log_path")+"'>"+uxBuildInfoList.get(i).get("build_number")+"</option>");
+	 					out.print("<option value='"+allLogPath[i]+"'>"+uxBuildInfoList.get(i).get("pull_request_id")+"</option>");
+/* 	 					out.print("<option value='"+uxBuildInfoList.get(i).get("log_path")+"'>"+uxBuildInfoList.get(i).get("pull_request_id")+"</option>"); */
 					}
 				}	
-				prevNumber = uxBuildInfoList.get(i).get("build_number");
+				prevNumber = uxBuildInfoList.get(i).get("pull_request_id");
 	 			/* System.out.println("====================================");
  				System.out.println(uxBuildInfoList.get(i).get("log_path"));
  				System.out.println("===================================="); */
@@ -502,11 +539,13 @@
 			{
 				if(pBuildCount != null && pBuildCount.length() > 0 && pBuildCount.equals(axBuildInfoList.get(i).get("build_count")))
 				{
-					out.print("<option class='"+uxBuildInfoList.get(i).get("log_path")+"' value='"+uxBuildInfoList.get(i).get("build_count")+"' selected>"+uxBuildInfoList.get(i).get("build_count")+"</option>");	
+					out.print("<option class='"+allLogPath[i]+"' value='"+uxBuildInfoList.get(i).get("log_path")+"' selected>"+uxBuildInfoList.get(i).get("build_count")+"</option>");	
+/* 					out.print("<option class='"+uxBuildInfoList.get(i).get("log_path")+"' value='"+uxBuildInfoList.get(i).get("build_count")+"' selected>"+uxBuildInfoList.get(i).get("build_count")+"</option>");	 */
 				}
 				else
 				{
- 					out.print("<option class='"+uxBuildInfoList.get(i).get("log_path")+"' value='"+uxBuildInfoList.get(i).get("build_count")+"'>"+uxBuildInfoList.get(i).get("build_count")+"</option>");
+ 					out.print("<option class='"+allLogPath[i]+"' value='"+uxBuildInfoList.get(i).get("log_path")+"'>"+uxBuildInfoList.get(i).get("build_count")+"</option>");
+/*  					out.print("<option class='"+uxBuildInfoList.get(i).get("log_path")+"' value='"+uxBuildInfoList.get(i).get("build_count")+"'>"+uxBuildInfoList.get(i).get("build_count")+"</option>"); */
 				}
 			}
 			%>

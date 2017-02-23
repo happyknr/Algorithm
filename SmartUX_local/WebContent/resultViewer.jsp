@@ -17,6 +17,8 @@
 public final int COMPARETYPE_NAME = 0;
 public final int COMPARETYPE_DATE = 1;
 
+static final String DEFUALT_PATH = "SmartUX\\logs\\";
+
 /* 파일 정렬을 위한 메소드 */
 public File[] sortFileList(File[] files) 
 {
@@ -46,6 +48,10 @@ public File[] sortFileList(File[] files)
 	String packageName = "com_skp_launcher"; //request.getParameter("packageName");
 	String testName = request.getParameter("testName");
 	String logFile = request.getParameter("logFile");
+	
+	String pLogPath = request.getParameter("pLogPath");
+	String logFiles[] = {};
+	//System.out.println("pLogPath : " + pLogPath);
 	System.out.println("packageName : [" + packageName + "] testName : [" + testName + "] logFile : [" +logFile + "]");
 	
 	String logFilePath = "C:\\Users\\knr\\git\\SmartUX_local\\WebContent\\SmartUX\\logs\\"; //application.getRealPath("/")+"../"+request.getParameter("logFilePath"); //★
@@ -53,7 +59,34 @@ public File[] sortFileList(File[] files)
 	//String logFilePath = application.getRealPath("/")+"SmartUX\\logs\\"; //+packageName+"\\"+testName+"\\"+logFile;
 	//String[] logFileDepth = {};
 	
-
+	
+	if(pLogPath != null && pLogPath.length() > 0)
+	{
+		String tmpArr[] = {};
+		tmpArr = pLogPath.split(",");
+		if(tmpArr != null && tmpArr.length > 0)
+		{
+			logFiles = new String[tmpArr.length];
+			for(int i = 0; i < tmpArr.length; i++)
+			{
+				packageName = tmpArr[i].split("\\\\")[0];
+				testName = tmpArr[i].split("\\\\")[1];
+				if(logFile == null)
+				{
+					logFile = tmpArr[i].split("\\\\")[2];
+				}
+				logFiles[i] = tmpArr[i].split("\\\\")[2];
+				//System.out.println("logFiles"+i+logFiles[i]);
+			}
+		}
+		else
+		{
+			packageName = pLogPath.split("\\\\")[0];
+			testName = pLogPath.split("\\\\")[1];
+			logFile = pLogPath.split("\\\\")[2];
+		}
+	}
+	
 	if(packageName == null || packageName == "")
 	{
 		packageName = "com_skp_launcher";
@@ -142,7 +175,12 @@ public File[] sortFileList(File[] files)
 %>
 			$("#packageNameForm input[name='packageName']").attr("value","<%=packageName%>");
 			$("#packageNameForm input[name='testName']").attr("value","<%=testNameList[0]%>");
-<%
+			<%
+			if(pLogPath != null && pLogPath.length() > 0)
+			{
+			%>
+			$("#packageNameForm input[name='pLogPath']").attr("value","<%=pLogPath.replace("\\", "\\\\")%>");
+<%			}
 			}
 		}
 		else
@@ -151,7 +189,12 @@ public File[] sortFileList(File[] files)
 			$("#packageNameForm input[name='packageName']").attr("value",selectedPackageName);
 			$("#packageNameForm input[name='testName']").attr("value",selectedTestName);
 			$("#packageNameForm input[name='logFile']").attr("value",selectedLogFile);
-<%
+			<%
+			if(pLogPath != null && pLogPath.length() > 0)
+			{
+			%>
+			$("#packageNameForm input[name='pLogPath']").attr("value","<%=pLogPath.replace("\\", "\\\\")%>");
+<%			}
 		}
 %>
 		$("#packageNameForm").attr({action:'resultViewer.jsp', method:'post'}).submit();
@@ -210,6 +253,13 @@ public File[] sortFileList(File[] files)
 			var selectedTestName = $("#selTestName").val();
 			$("#packageNameForm input[name='packageName']").attr("value",selectedPackageName);
 			$("#packageNameForm input[name='testName']").attr("value",selectedTestName);
+			<%
+			if(pLogPath != null && pLogPath.length() > 0)
+			{
+			%>
+			$("#packageNameForm input[name='pLogPath']").attr("value","<%=pLogPath.replace("\\", "\\\\")%>");
+			<%
+			}%>
 			$("#packageNameForm").attr({action:'resultViewer.jsp', method:'post'}).submit();
 		});
 		
@@ -261,6 +311,7 @@ public File[] sortFileList(File[] files)
 		<input type="hidden" name="packageName" value="">
 		<input type="hidden" name="testName" value="">
 		<input type="hidden" name="logFile" value="">
+		<input type="hidden" name="pLogPath" value="">
 		<select id="selPackageName">
 			<!-- <option selected disabled>Choose Service Name</option> -->
 <%-- <%
@@ -288,9 +339,15 @@ public File[] sortFileList(File[] files)
 	{
 		for(int i = 0; i < testNameList.length; i++)
 		{
+			/* for(int j = 0; j < logFiles.length; j++)
+			{
+				if(logFiles[j].equals(testNameList[i]))
+				{ */
 %>
-			<option value="<%=testNameList[i]%>"><%=testNameList[i]%></option>
-<%
+					<option value="<%=testNameList[i]%>"><%=testNameList[i]%></option>
+<%	
+			/* 	}
+			} */
 		}
 	}
 %>
@@ -304,9 +361,24 @@ public File[] sortFileList(File[] files)
 	{
 		for(int i = 0; i < logFileList.length; i++)
 		{
+			for(int j = 0; j < logFiles.length; j++)
+			{
+				if(logFileList[i].equals(logFiles[j]))
+				{
+					if(logFileList[i].equals(logFile))
+					{
 %>
-			<option value="<%=logFileList[i]%>"><%=logFileList[i]%></option>
+						<option value="<%=logFileList[i]%>" selected><%=logFileList[i]%></option>
+<%			
+					}
+					else
+					{
+%>					
+						<option value="<%=logFileList[i]%>"><%=logFileList[i]%></option>
 <%
+					}
+				}
+			}
 		}
 	}
 %>		

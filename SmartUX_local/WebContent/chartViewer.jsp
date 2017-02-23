@@ -5,7 +5,7 @@
 <%!
 	static final String PACKAGE_NAME = "com.skp.launcher";
 
-public ArrayList<HashMap<String, String>> selectValue(Connection conn, String tableName, String buildNumber, String buildCount, ArrayList<HashMap<String, String>> array)
+public ArrayList<HashMap<String, String>> selectValue(Connection conn, String tableName, String pullRequestId, String buildCount, ArrayList<HashMap<String, String>> array)
 {
 	Statement stmt = null;
 	ResultSet rs = null;
@@ -26,12 +26,12 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 		query += "	order by date desc"; */
 		
 		query = "select scenario, value, date, build_count from "+tableName+"\n";
-		query += "  where build_number = '"+buildNumber+"' \n";
+		query += "  where pull_request_id = '"+pullRequestId+"' \n";
 		if(buildCount != null && buildCount.length() > 0)
 		{
 			query += "  and build_count = '"+buildCount+"' \n"; 
 		}
-		query += "  order by build_number, build_count";
+		query += "  order by pull_request_id, build_count";
 		
 		rs = stmt.executeQuery(query);
 		
@@ -71,7 +71,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 	String scenario = request.getParameter("scenario");
 	String sdate = request.getParameter("sdate");
 	String edate = request.getParameter("edate");
-	String buildNumber = request.getParameter("buildNumber");
+	String pullRequestId = request.getParameter("pullRequestId");
 	String buildCount = request.getParameter("buildCount");
 	String[] scenarioArr = {};
 	
@@ -94,9 +94,9 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 	
 	String deviceInfo = "";
 	
-	if(buildNumber != null && buildNumber.length() > 0)
+	if(pullRequestId != null && pullRequestId.length() > 0)
 	{
-		selectValue(conn, tableName, buildNumber, buildCount, buildNumberList);
+		selectValue(conn, tableName, pullRequestId, buildCount, buildNumberList);
 	}
 	
 %>
@@ -108,9 +108,9 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 <script type="text/javascript">
 
 	/* chart tooltip */
-	function tooltipContents(date, buildNumber, value)
+	function tooltipContents(date, pullRequestId, value)
 	{
-		return '<div style="padding:5px 5px 5px 5px;"><b>'+date+'</b><br/><b>['+buildNumber+'] '+value.toFixed(3)+'</b></div>';
+		return '<div style="padding:5px 5px 5px 5px;"><b>'+date+'</b><br/><b>['+pullRequestId+'] '+value.toFixed(3)+'</b></div>';
 	}
 
 	/* google chart */
@@ -160,11 +160,11 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 							sb.append("		 , TBL"+i+".device_info AS device_info	\n");
 							sb.append("		 , TBL"+i+".value AS value"+i+"	\n");
 							sb.append("      , TBL"+i+".date AS date"+i+"	\n");
-							sb.append("      , TBL"+i+".build_number AS build_number"+i+"	\n");
+							sb.append("      , TBL"+i+".pull_request_id AS pull_request_id"+i+"	\n");
 							sb.append("      , ( SELECT MAX(value) FROM "+tableName+"	\n");
 							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"'	\n");
 							sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"'	\n");
-							sb.append("			AND build_number != ''	\n");
+							sb.append("			AND pull_request_id != ''	\n");
 							if(sdate != null && sdate != "")
 							{
 								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
@@ -177,7 +177,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 							sb.append("     , ( SELECT MIN(value) FROM "+tableName+" 			\n");
 							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"' 	\n");
 							sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"' 	\n");
-							sb.append("			AND build_number != '' 	\n");
+							sb.append("			AND pull_request_id != '' 	\n");
 							if(sdate != null && sdate != "")
 							{
 								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
@@ -197,7 +197,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 							sb.append("			 , device_info                               	\n");
 							sb.append("			 , value                               	\n");
 							sb.append("			 , date                                	\n");
-							sb.append("      	 , build_number				\n");
+							sb.append("      	 , pull_request_id				\n");
 							sb.append("			FROM "+tableName+", (SELECT @ROWNUM"+i+" := 0) R      	\n");
 							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"'      	\n");
 							sb.append("				AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"'     	\n");
@@ -209,7 +209,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 							{
 								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n");
 							}
-							sb.append("			AND build_number != 0 						\n");
+							sb.append("			AND pull_request_id != 0 						\n");
 							sb.append("	) TBL"+i+"                                      \n");
 							if(on == i)
 							{
@@ -230,7 +230,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     					sb.append("		 , ( SELECT MAX(value) FROM "+tableName+"  \n");
     					sb.append("		 			WHERE PACKAGE_NAME='"+PACKAGE_NAME+"' \n"); 
     					sb.append("		 				AND SCENARIO = '"+scenario.substring(0, scenario.indexOf("("))+"' \n");
-    					sb.append("						AND build_number != ''  \n");
+    					sb.append("						AND pull_request_id != ''  \n");
     					if(sdate != null && sdate != "")
     					{
     						sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
@@ -243,7 +243,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     					sb.append("		 , ( SELECT MIN(value) FROM "+tableName+"  \n");
     					sb.append("		 			WHERE PACKAGE_NAME='"+PACKAGE_NAME+"'   \n");
     					sb.append("		 				AND SCENARIO = '"+scenario.substring(0, scenario.indexOf("("))+"'  \n");
-    					sb.append("						AND build_number != ''  \n");
+    					sb.append("						AND pull_request_id != ''  \n");
     					if(sdate != null && sdate != "")
     					{
     						sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
@@ -266,7 +266,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     					{
     						sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n");
     					}
-    					sb.append("		AND build_number != ''  \n");
+    					sb.append("		AND pull_request_id != ''  \n");
     					sb.append("	ORDER BY date ASC \n");
     				}
     				
@@ -295,15 +295,15 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 	//		    	 					System.out.println("value"+i+" : " + rs.getString("value"+i) + ", " + "max"+i+" : "+rs.getString(i+"_MAX")+rs.getString("date"+i)+rs.getString("build_number"+i)+rs.getString("value"+i));
 			    	 					if(rs.getString("value"+i).equals(rs.getString(i+"_MAX")))
 			    	 					{
-			    	 						out.print(rs.getString("value"+i)+", 'MAX', tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("build_number"+i)+","+rs.getString("value"+i)+")");
+			    	 						out.print(rs.getString("value"+i)+", 'MAX', tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("pull_request_id"+i)+","+rs.getString("value"+i)+")");
 			    	 					}
 			    	 					else if(rs.getString("value"+i).equals(rs.getString(i+"_MIN")))
 			    	 					{
-			    	 						out.print(rs.getString("value"+i)+", 'MIN', tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("build_number"+i)+","+rs.getString("value"+i)+")");
+			    	 						out.print(rs.getString("value"+i)+", 'MIN', tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("pull_request_id"+i)+","+rs.getString("value"+i)+")");
 			    	 					}
 			    	 					else
 			    	 					{
-			    	 						out.print(rs.getString("value"+i)+", "+null+", tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("build_number"+i)+","+rs.getString("value"+i)+")");
+			    	 						out.print(rs.getString("value"+i)+", "+null+", tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("pull_request_id"+i)+","+rs.getString("value"+i)+")");
 			    	 					}
 		    	 					}
 		    	 					else
@@ -323,15 +323,15 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 		    	 				
 		    	 				if(rs.getString("value").equals(rs.getString("maxVal")))
 		    	    	 		{
-		    		    	 		out.print(rs.getString("rownum")+","+rs.getString("value")+", 'MAX', tooltipContents('"+rs.getString("date")+"',"+rs.getString("build_number")+","+rs.getString("value")+")");
+		    		    	 		out.print(rs.getString("rownum")+","+rs.getString("value")+", 'MAX', tooltipContents('"+rs.getString("date")+"',"+rs.getString("pull_request_id")+","+rs.getString("value")+")");
 		    	    	 		}
 		    	    	 		else if(rs.getString("value").equals(rs.getString("minVal")))
 		    	    	 		{
-		    	    	 			out.print(rs.getString("rownum")+","+rs.getString("value")+", 'MIN', tooltipContents('"+rs.getString("date")+"',"+rs.getString("build_number")+","+rs.getString("value")+")");
+		    	    	 			out.print(rs.getString("rownum")+","+rs.getString("value")+", 'MIN', tooltipContents('"+rs.getString("date")+"',"+rs.getString("pull_request_id")+","+rs.getString("value")+")");
 		    	    	 		}
 		    	    	 		else
 		    	    	 		{
-		    	    	 			out.print(rs.getString("rownum")+","+rs.getString("value") +", "+null+", tooltipContents('"+rs.getString("date")+"',"+rs.getString("build_number")+","+rs.getString("value")+")");
+		    	    	 			out.print(rs.getString("rownum")+","+rs.getString("value") +", "+null+", tooltipContents('"+rs.getString("date")+"',"+rs.getString("pull_request_id")+","+rs.getString("value")+")");
 		    	    	 		}
 		    	 			}
 		    	 		}
