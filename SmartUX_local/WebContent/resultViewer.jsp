@@ -52,7 +52,7 @@ public File[] sortFileList(File[] files)
 	String pLogPath = request.getParameter("pLogPath");
 	String logFiles[] = {};
 	//System.out.println("pLogPath : " + pLogPath);
-	System.out.println("packageName : [" + packageName + "] testName : [" + testName + "] logFile : [" +logFile + "]");
+	//System.out.println("packageName : [" + packageName + "] testName : [" + testName + "] logFile : [" +logFile + "]");
 	
 	String logFilePath = "C:\\Users\\knr\\git\\SmartUX_local\\WebContent\\SmartUX\\logs\\"; //application.getRealPath("/")+"../"+request.getParameter("logFilePath"); //★
 	String paramLogFilePath = "C:/Users/knr/git/SmartUX_local/WebContent/SmartUX/logs"; //로컬에서는 형태가 달라서 사용함. 운영에 필요없음
@@ -367,12 +367,14 @@ public File[] sortFileList(File[] files)
 				{
 					if(logFileList[i].equals(logFile))
 					{
+						//System.out.println(logFile + "##########" + logFileList[i]);
 %>
 						<option value="<%=logFileList[i]%>" selected><%=logFileList[i]%></option>
 <%			
 					}
 					else
 					{
+						//System.out.println(logFile + "######@@@@@@####" + logFileList[i]);
 %>					
 						<option value="<%=logFileList[i]%>"><%=logFileList[i]%></option>
 <%

@@ -129,6 +129,7 @@ try
 	}
 	
 	String testName = null;
+	int testcaseCount = 1;
 	for(int i = 0 ; i < allData.size(); i++)
 	{
 		
@@ -149,7 +150,7 @@ try
 				allTestcaseList.add(testcaseHashmap);
 				testcaseList = new ArrayList<String>();
 				testcaseHashmap = new LinkedHashMap<String, Object>();
-				testName = tmpArr[1];
+				testName = "#"+testcaseCount+tmpArr[1];
 			}
 			
 			if(tmpArr[0].equals("TEST CASE"))
@@ -157,9 +158,10 @@ try
 				//System.out.println(">> "+ tmpArr[1]);
 				//System.out.println(">> "+ tmpArr[2]);
 				
-				if(testName == null) testName = tmpArr[1];
+				if(testName == null) testName = "#"+testcaseCount+tmpArr[1];
 				testcaseHashmap.put("testcase", tmpArr[1]);
 				testcaseHashmap.put("result", tmpArr[2]);
+				testcaseCount++;
 			}
 			else
 			{
@@ -269,23 +271,20 @@ catch(Exception e)
 					out.print("<td style='cursor: pointer;' onClick="+"display('body"+idx+"')"+">"+ tmpArr[1] + "</td>");
 					if(tmpArr[2].equals("FAIL"))
 					{
+						out.print("<td style='color: red; font-weight: bold;'>"+ tmpArr[2]);
 						String mp4FileName = null;
 						for(int j = 0; j < files.length; j++)
 						{
-							if(files[j].equals(MP4_FILENAME+(idx+1)+".mp4"))
+							for(int k = 0; k <= j; k++)
 							{
-								mp4FileName = files[j];
+								if(files[j].equals(MP4_FILENAME+(idx+1)+"_"+(k+1)+".mp4"))
+								{
+									mp4FileName = files[j];
+									out.print("&nbsp;<a href='"+mp4FilePath+mp4FileName+"' target='_blank'><img src='icon/mp4.PNG'/></a>");
+								}
 							}
 						}
-						
-						if(mp4FileName != null && mp4FileName.length() > 0)
-						{
-							out.print("<td>"+ tmpArr[2] + "&nbsp;<a href='"+mp4FilePath+mp4FileName+"' target='_blank'><img src='icon/mp4.PNG'/></a></td>");
-						}
-						else
-						{
-							out.print("<td>"+ tmpArr[2] + "</td>");
-						}
+						out.print("</td>");
 					}
 					else
 					{

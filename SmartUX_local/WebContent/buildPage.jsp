@@ -1,3 +1,4 @@
+<%@page import="java.util.HashSet"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.LinkedHashMap"%>
 <%@ page import="java.util.HashMap"%>
@@ -25,13 +26,28 @@
 		{
 			stmt = conn.createStatement();
 			
-			query = "select pull_request_id, \n";
+			/* query = "select pull_request_id, \n";
 			if(tableName.equals(UX_TABLE_NAME))
 			{
 				query += " log_path,  \n";
 			}
-			query += " build_count from "+tableName+" where pull_request_id != '' group by pull_request_id, build_count order by date desc";
-
+			query += " build_count from "+tableName+" where pull_request_id != '' group by pull_request_id, build_count order by date desc"; */
+			
+			query = "select "+tableName+".pull_request_id, \n";
+			if(tableName.equals(UX_TABLE_NAME))
+			{
+				query += " log_path,  \n";
+			}
+			query += tableName+".build_count \n";
+			query += "from "+tableName+", \n";
+			query += "(select @rownum := @rownum+1 as rownum, pull_request_id, date from "+tableName+", (select @rownum := 0) R group by pull_request_id order by date desc) temp \n";
+			query += "where "+tableName+".pull_request_id != '' \n";
+			query += " and "+tableName+".pull_request_id = temp.pull_request_id \n";
+			query += " group by pull_request_id, build_count \n";
+			query += "order by rownum desc, "+tableName+".date desc";
+			
+			//System.out.println(query);
+			
 			rs = stmt.executeQuery(query);
 
 			while(rs.next())
@@ -46,8 +62,8 @@
 					tmpMap.put("log_path", log_Path.substring(log_Path.lastIndexOf(DEFUALT_PATH)+DEFUALT_PATH.length(), log_Path.length()));
 				}
 				arrName.add(tmpMap);
-				
-			}  
+			} 
+			
 		}
 		catch(SQLException e)
 		{
@@ -125,7 +141,7 @@
 	String pullRequestId = request.getParameter("pull_request_id");
 	String pBuildCount = request.getParameter("build_count");
 	
-	//System.out.println("buildNumber["+pBuildNumber+"]");
+	System.out.println("buildNumber["+pBuildCount+"]");
 	
 	if(tableName == null || tableName == "")
 	{
@@ -207,6 +223,10 @@
 
 	$(document).ready(function(){
 		var tabName = "";
+		
+		$("#selUxBuildCount").find("option").filter(function(index) {
+			return '<%=pBuildCount %>' == $(this).text();
+			}).prop("selected", "selected");
 		<%
 		//if(pBuildNumber != null && pBuildNumber.length() > 0)
 		//{
@@ -221,7 +241,14 @@
 		%>
 			sendToChartViewer('exFrame', 'e2e', $("#selE2eSubMenu option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
 			sendToChartViewer('axFrame', 'aging', $("#selAgingSubMenu option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
-			sendToResultViewer('uxFrame', $('#selUxBuildNumber option:selected').val(), null);
+			if('<%=pBuildCount%>' == null)
+			{
+				sendToResultViewer('uxFrame', $('#selUxBuildNumber option:selected').val(), null);
+			}
+			else
+			{
+				sendToResultViewer('uxFrame', $('#selUxBuildNumber option:selected').val(), $('#selUxBuildCount option:selected').val());
+			}
 		<%
 		}
 		%>
@@ -506,7 +533,7 @@
 					
 					pull_request_id = uxBuildInfoList.get(i).get("pull_request_id");
 				}
-				System.out.println(allLogPath[i]);
+				//System.out.println(allLogPath[i]);
 			}
 			
 			prevNumber = "";
@@ -537,15 +564,15 @@
 			<%
 			for(int i = 0; i < uxBuildInfoList.size(); i++)
 			{
-				if(pBuildCount != null && pBuildCount.length() > 0 && pBuildCount.equals(axBuildInfoList.get(i).get("build_count")))
+				/* if(pBuildCount != null && pBuildCount.length() > 0 && pBuildCount.equals(uxBuildInfoList.get(i).get("build_count")))
 				{
 					out.print("<option class='"+allLogPath[i]+"' value='"+uxBuildInfoList.get(i).get("log_path")+"' selected>"+uxBuildInfoList.get(i).get("build_count")+"</option>");	
-/* 					out.print("<option class='"+uxBuildInfoList.get(i).get("log_path")+"' value='"+uxBuildInfoList.get(i).get("build_count")+"' selected>"+uxBuildInfoList.get(i).get("build_count")+"</option>");	 */
+// 					out.print("<option class='"+uxBuildInfoList.get(i).get("log_path")+"' value='"+uxBuildInfoList.get(i).get("build_count")+"' selected>"+uxBuildInfoList.get(i).get("build_count")+"</option>");	 
 				}
-				else
+				else */
 				{
  					out.print("<option class='"+allLogPath[i]+"' value='"+uxBuildInfoList.get(i).get("log_path")+"'>"+uxBuildInfoList.get(i).get("build_count")+"</option>");
-/*  					out.print("<option class='"+uxBuildInfoList.get(i).get("log_path")+"' value='"+uxBuildInfoList.get(i).get("build_count")+"'>"+uxBuildInfoList.get(i).get("build_count")+"</option>"); */
+// 					out.print("<option class='"+uxBuildInfoList.get(i).get("log_path")+"' value='"+uxBuildInfoList.get(i).get("build_count")+"'>"+uxBuildInfoList.get(i).get("build_count")+"</option>"); 
 				}
 			}
 			%>

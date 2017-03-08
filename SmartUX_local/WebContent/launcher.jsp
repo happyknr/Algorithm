@@ -37,10 +37,10 @@
 
 	<div class="layer">
 		<div class="button" style="float: left;" onclick="location.href='realtimePage.jsp'">
-			<center><h1>실시간</h1></center>
+			<center><h1>상용</h1></center>
 		</div>
 		<div class="button" style="float: right;" onclick="location.href='buildPage.jsp'">
-			<center><h1>빌드</h1></center>
+			<center><h1>실시간 빌드</h1></center>
 		</div>
 	</div>
 </body>

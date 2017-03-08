@@ -108,9 +108,9 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 <script type="text/javascript">
 
 	/* chart tooltip */
-	function tooltipContents(date, pullRequestId, value)
+	function tooltipContents(date, pullRequestId, value, version)
 	{
-		return '<div style="padding:5px 5px 5px 5px;"><b>'+date+'</b><br/><b>['+pullRequestId+'] '+value.toFixed(3)+'</b></div>';
+		return '<div style="padding:5px 5px 5px 5px;"><b>'+date+'</b><br/><b>['+pullRequestId+'] '+value.toFixed(3)+'</b></br><b>'+version+'</div>';
 	}
 
 	/* google chart */
@@ -154,79 +154,13 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     				{
     					//---------------------------------
     					int on = 2;
-						/* sb.append(" SELECT TBL1.ROWNUM AS rownum	\n");
-						for(int i = 1; i < scenarioArr.length; i++)
-						{
-							sb.append("		 , TBL"+i+".device_info AS device_info	\n");
-							sb.append("		 , TBL"+i+".value AS value"+i+"	\n");
-							sb.append("      , TBL"+i+".date AS date"+i+"	\n");
-							sb.append("      , TBL"+i+".pull_request_id AS pull_request_id"+i+"	\n");
-							sb.append("      , ( SELECT MAX(value) FROM "+tableName+"	\n");
-							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"'	\n");
-							sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"'	\n");
-							sb.append("			AND pull_request_id != ''	\n");
-							if(sdate != null && sdate != "")
-							{
-								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
-							}
-							if(edate != null && edate != "")
-							{
-								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n");
-							}
-							sb.append("		)"+i+"_MAX    								\n");
-							sb.append("     , ( SELECT MIN(value) FROM "+tableName+" 			\n");
-							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"' 	\n");
-							sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"' 	\n");
-							sb.append("			AND pull_request_id != '' 	\n");
-							if(sdate != null && sdate != "")
-							{
-								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
-							}
-							if(edate != null && edate != "")
-							{
-								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n");
-							}
-							sb.append("			AND value != 0 						\n");
-							sb.append("		) "+i+"_MIN    								\n");
-						}
-						sb.append("	FROM                                              	\n");
-						for(int i = 1; i < scenarioArr.length; i++)
-						{
-							sb.append("	(                                               \n");
-							sb.append("		SELECT @ROWNUM"+i+" := @ROWNUM"+i+" +1 AS ROWNUM	\n");
-							sb.append("			 , device_info                               	\n");
-							sb.append("			 , value                               	\n");
-							sb.append("			 , date                                	\n");
-							sb.append("      	 , pull_request_id				\n");
-							sb.append("			FROM "+tableName+", (SELECT @ROWNUM"+i+" := 0) R      	\n");
-							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"'      	\n");
-							sb.append("				AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"'     	\n");
-							if(sdate != null && sdate != "")
-							{
-								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
-							}
-							if(edate != null && edate != "")
-							{
-								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n");
-							}
-							sb.append("			AND pull_request_id != 0 						\n");
-							sb.append("	) TBL"+i+"                                      \n");
-							if(on == i)
-							{
-								sb.append("	ON	TBL"+(i-1)+".ROWNUM = TBL"+i+".ROWNUM      \n");
-								on++;
-							}
-							if(i < scenarioArr.length-1)
-							{
-								sb.append(" LEFT JOIN 											\n");
-							}
-						}  */
 						sb.append(" SELECT TBL1.ROWNUM AS rownum	\n");
 						for(int i = 1; i < scenarioArr.length; i++)
 						{
 							sb.append("		 , TBL"+i+".device_info AS device_info	\n");
 							sb.append("		 , TBL"+i+".value AS value"+i+"	\n");
 							sb.append("      , TBL"+i+".date AS date"+i+"	\n");
+							sb.append("      , TBL"+i+".version AS version"+i+"	\n");
 							sb.append("      , TBL"+i+".pull_request_id AS pull_request_id"+i+"	\n");
 							sb.append("      , ( SELECT MAX(value) FROM "+tableName+"	\n");
 							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"'	\n");
@@ -264,9 +198,10 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 							sb.append("			 , "+tableName+".device_info                               	\n");
 							sb.append("			 , "+tableName+".value                               	\n");
 							sb.append("			 , "+tableName+".date                                	\n");
+							sb.append("			 , "+tableName+".version                                	\n");
 							sb.append("      	 , "+tableName+".pull_request_id				\n");
 							sb.append("			FROM "+tableName+", (SELECT @ROWNUM"+i+" := 0) R      	\n");
-							sb.append(" 	, ( SELECT scenario, date, pull_request_id, MAX(BUILD_COUNT) build_count \n");
+							sb.append(" 	, ( SELECT scenario, version, date, pull_request_id, MAX(BUILD_COUNT) build_count \n");
 	    					sb.append(" 		FROM "+tableName);
 	    					sb.append("         WHERE  PACKAGE_NAME='"+PACKAGE_NAME+"'  \n");
 	    					sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"' 	\n");
@@ -332,7 +267,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     					sb.append("		 ) minVal  \n");
     					sb.append("	FROM "+tableName+" \n");
     					sb.append("		, (SELECT @ROWNUM := 0) R  \n");
-    					sb.append(" 	, ( SELECT scenario, date, pull_request_id, MAX(BUILD_COUNT) build_count \n");
+    					sb.append(" 	, ( SELECT scenario, date, version, pull_request_id, MAX(BUILD_COUNT) build_count \n");
     					sb.append(" 		FROM "+tableName);
     					sb.append("         WHERE  PACKAGE_NAME='"+PACKAGE_NAME+"'  \n");
     					sb.append("			AND SCENARIO = '"+ scenario.substring(0, scenario.indexOf("(")) +"'  \n");
@@ -379,15 +314,15 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 	//		    	 					System.out.println("value"+i+" : " + rs.getString("value"+i) + ", " + "max"+i+" : "+rs.getString(i+"_MAX")+rs.getString("date"+i)+rs.getString("build_number"+i)+rs.getString("value"+i));
 			    	 					if(rs.getString("value"+i).equals(rs.getString(i+"_MAX")))
 			    	 					{
-			    	 						out.print(rs.getString("value"+i)+", 'MAX', tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("pull_request_id"+i)+","+rs.getString("value"+i)+")");
+			    	 						out.print(rs.getString("value"+i)+", 'MAX', tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("pull_request_id"+i)+","+rs.getString("value"+i)+", '"+rs.getString("version"+i)+"')");
 			    	 					}
 			    	 					else if(rs.getString("value"+i).equals(rs.getString(i+"_MIN")))
 			    	 					{
-			    	 						out.print(rs.getString("value"+i)+", 'MIN', tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("pull_request_id"+i)+","+rs.getString("value"+i)+")");
+			    	 						out.print(rs.getString("value"+i)+", 'MIN', tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("pull_request_id"+i)+","+rs.getString("value"+i)+",'"+rs.getString("version"+i)+"')");
 			    	 					}
 			    	 					else
 			    	 					{
-			    	 						out.print(rs.getString("value"+i)+", "+null+", tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("pull_request_id"+i)+","+rs.getString("value"+i)+")");
+			    	 						out.print(rs.getString("value"+i)+", "+null+", tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("pull_request_id"+i)+","+rs.getString("value"+i)+",'"+rs.getString("version"+i)+"')");
 			    	 					}
 		    	 					}
 		    	 					else
@@ -407,15 +342,15 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 		    	 				
 		    	 				if(rs.getString("value").equals(rs.getString("maxVal")))
 		    	    	 		{
-		    		    	 		out.print(rs.getString("rownum")+","+rs.getString("value")+", 'MAX', tooltipContents('"+rs.getString("date")+"',"+rs.getString("pull_request_id")+","+rs.getString("value")+")");
+		    		    	 		out.print(rs.getString("rownum")+","+rs.getString("value")+", 'MAX', tooltipContents('"+rs.getString("date")+"',"+rs.getString("pull_request_id")+","+rs.getString("value")+",'"+rs.getString("version")+"')");
 		    	    	 		}
 		    	    	 		else if(rs.getString("value").equals(rs.getString("minVal")))
 		    	    	 		{
-		    	    	 			out.print(rs.getString("rownum")+","+rs.getString("value")+", 'MIN', tooltipContents('"+rs.getString("date")+"',"+rs.getString("pull_request_id")+","+rs.getString("value")+")");
+		    	    	 			out.print(rs.getString("rownum")+","+rs.getString("value")+", 'MIN', tooltipContents('"+rs.getString("date")+"',"+rs.getString("pull_request_id")+","+rs.getString("value")+",'"+rs.getString("version")+"')");
 		    	    	 		}
 		    	    	 		else
 		    	    	 		{
-		    	    	 			out.print(rs.getString("rownum")+","+rs.getString("value") +", "+null+", tooltipContents('"+rs.getString("date")+"',"+rs.getString("pull_request_id")+","+rs.getString("value")+")");
+		    	    	 			out.print(rs.getString("rownum")+","+rs.getString("value") +", "+null+", tooltipContents('"+rs.getString("date")+"',"+rs.getString("pull_request_id")+","+rs.getString("value")+",'"+rs.getString("version")+"')");
 		    	    	 		}
 		    	 			}
 		    	 		}

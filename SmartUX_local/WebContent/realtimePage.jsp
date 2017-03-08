@@ -15,7 +15,7 @@ String edate = request.getParameter("edate");
 String tabName = request.getParameter("tabName");
 String deviceInfo = null;
 
-System.out.println("subMenu : [" + psubMenu + "] appversion : [" + pappVersion + "] sdate : ["+sdate+"] edate : ["+edate+"] tabName : ["+tabName+"]");
+//System.out.println("subMenu : [" + psubMenu + "] appversion : [" + pappVersion + "] sdate : ["+sdate+"] edate : ["+edate+"] tabName : ["+tabName+"]");
 
 
 if(tabName == null || tabName == "")
@@ -79,7 +79,7 @@ try
 	query += " 		, COUNT(SCENARIO) CNT \n";
 	query += "	FROM "+tabName+" WHERE PACKAGE_NAME = '"+packageName+"'";
 	query += "			AND value != 0 \n";
-	query += "			AND pull_request_id is null \n";
+	query += "			AND ( pull_request_id is null or pull_request_id = '' ) \n";
 	if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
 	{
 		query += "	 	AND VERSION = '" +pappVersion+"'  \n";
@@ -111,7 +111,7 @@ try
 	}
 	
 	/* 앱 버전 조회 쿼리 */
-	query = "SELECT DISTINCT(VERSION) AS VERSION FROM "+tabName+" WHERE PACKAGE_NAME='"+packageName+"' AND pull_request_id is null \n"; // AND type = '"+REAL_TIME+"'";
+	query = "SELECT DISTINCT(VERSION) AS VERSION FROM "+tabName+" WHERE PACKAGE_NAME='"+packageName+"' AND ( pull_request_id is null or pull_request_id = '' ) \n"; // AND type = '"+REAL_TIME+"'";
 	//System.out.println("VERSION QUERY : " + query);
 	
 	rs3 = stmt.executeQuery(query);
@@ -414,7 +414,7 @@ try
 				query += "     , ( SELECT MAX(value) FROM "+tabName+"			\n";
 				query += "			WHERE PACKAGE_NAME = '"+packageName+"'	\n";
 				query += "			AND SCENARIO = '"+subMenuArr.get(i).get("SCENARIO")+"'	\n";
-				query += "			AND pull_request_id is null \n";
+				query += "			AND ( pull_request_id is null or pull_request_id = '' ) \n";
 				if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
 				{
 					query += "	 				AND VERSION = '" +pappVersion+"'  \n";
@@ -431,7 +431,7 @@ try
 				query += "     , ( SELECT MIN(value) FROM "+tabName+" 			\n";
 				query += "			WHERE PACKAGE_NAME = '"+packageName+"' 	\n";
 				query += "			AND SCENARIO = '"+subMenuArr.get(i).get("SCENARIO")+"' 	\n";
-				query += "			AND pull_request_id is null \n";
+				query += "			AND ( pull_request_id is null or pull_request_id = '' ) \n";
 				if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
 				{
 					query += "	 				AND VERSION = '" +pappVersion+"'  \n";
@@ -459,7 +459,7 @@ try
 				query += "			FROM "+tabName+", (SELECT @ROWNUM"+i+" := 0) R      	\n";
 				query += "			WHERE PACKAGE_NAME = '"+packageName+"'      	\n";
 				query += "				AND SCENARIO = '"+subMenuArr.get(i).get("SCENARIO")+"'     	\n";
-				query += "			AND pull_request_id is null \n";
+				query += "			AND ( pull_request_id is null or pull_request_id = '' ) \n";
 				if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
 				{
 					query += "	 				AND VERSION = '" +pappVersion+"'  \n";
@@ -495,7 +495,7 @@ try
 			query += "		 , ( SELECT MAX(value) FROM "+tabName+"  \n";
 			query += "		 			WHERE PACKAGE_NAME='"+packageName+"' \n"; 
 			query += "		 				AND SCENARIO = '"+psubMenu+"' \n";
-			query += "			AND pull_request_id is null \n";
+			query += "			AND ( pull_request_id is null or pull_request_id = '' ) \n";
 			if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
 			{
 				query += "	 				AND VERSION = '" +pappVersion+"'  \n";
@@ -512,7 +512,7 @@ try
 			query += "		 , ( SELECT MIN(value) FROM "+tabName+"  \n";
 			query += "		 			WHERE PACKAGE_NAME='"+packageName+"'   \n";
 			query += "		 				AND SCENARIO = '"+psubMenu+"'  \n";
-			query += "			AND pull_request_id is null \n";
+			query += "			AND ( pull_request_id is null or pull_request_id = '' ) \n";
 			if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
 			{
 				query += "	 				AND VERSION = '" +pappVersion+"'  \n";
@@ -531,7 +531,7 @@ try
 			query += "		, (SELECT @ROWNUM := 0) R  \n";
 			query += "	WHERE PACKAGE_NAME='"+packageName+"'  \n";
 			query += "		AND SCENARIO = '"+ psubMenu +"'  \n";
-			query += "			AND pull_request_id is null \n";
+			query += "			AND ( pull_request_id is null or pull_request_id = '' ) \n";
 			if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
 			{
 				query += "	 				AND VERSION = '" +pappVersion+"'  \n";
@@ -553,7 +553,7 @@ try
 		/* 그래프 데이터 조회 쿼리(시나리오 제외 조건 검색) */
 		query = "SELECT @ROWNUM := @ROWNUM +1 AS ROWNUM, "+tabName+".* \n";
 		query += "		, ( SELECT MAX(value) FROM "+tabName+" WHERE PACKAGE_NAME='"+packageName+"' \n";
-		query += "			AND pull_request_id is null \n";
+		query += "			AND ( pull_request_id is null or pull_request_id = '' ) \n";
 		if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
 		{
 			query += "	 				AND VERSION = '" +pappVersion+"'  \n";
@@ -568,7 +568,7 @@ try
 		}
 		query += "		) MAX_   \n";
 		query += "		, ( SELECT MIN(value) FROM "+tabName+" WHERE PACKAGE_NAME='"+packageName+"' \n";
-		query += "			AND pull_request_id is null \n";
+		query += "			AND ( pull_request_id is null or pull_request_id = '' ) \n";
 		if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
 		{
 			query += "					AND VERSION = '" +pappVersion+"' \n";
@@ -586,7 +586,7 @@ try
 		query += "	FROM "+tabName+", (SELECT @ROWNUM := 0) R \n";
 		query += "	WHERE package_name='"+packageName+"' \n";
 		query += " AND value != 0  \n";
-		query += "			AND pull_request_id is null \n";
+		query += "			AND ( pull_request_id is null or pull_request_id = '' ) \n";
 		if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
 		{
 			query += " AND VERSION = '" +pappVersion+"' \n";
