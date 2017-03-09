@@ -379,7 +379,25 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     		}
     	 %>
 	      ]);
-
+    					
+	var maxY = 0;
+<%
+	if(scenario != null && scenario != "")
+	{
+		if(tableName.equals("aging"))
+		{
+%>
+			maxY = 500;
+<%
+		}
+		else
+		{
+%>
+			maxY = 20.0;
+<%
+		}
+	}
+%>
 	      var options = {
 				title: '런처플래닛 <%=deviceInfo %>',
 				titleTextStyle:
@@ -394,6 +412,15 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 		    	hAxis:
 				{
 					gridlines: {count:0}
+				},
+				vAxis:
+				{
+					viewWindowMode : 'explicit',
+					viewWindow :
+					{
+						min : 0.0,
+						max : maxY
+					}
 				}
 	      };
 
