@@ -336,7 +336,14 @@ catch(Exception e)
 				for(int j = 1; j < arr.length; j++)
 				{
 					//System.out.println(arr[j]);
-					out.print("<td>"+arr[j]+"</td>");
+					if(arr[j].equals("FAIL"))
+					{
+						out.print("<td style='color: red; font-weight: bold;'>"+arr[j]+"</td>");
+					}
+					else
+					{
+						out.print("<td>"+arr[j]+"</td>");
+					}
 				}
 				out.print("</tr>");
 			}
