@@ -153,15 +153,16 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     				if(scenario.substring(0, 3).equals("all"))
     				{
     					//---------------------------------
-    					int on = 2;
+    					int on = 1;
 						sb.append(" SELECT TBL1.ROWNUM AS rownum	\n");
+						/* sb.append("        , build.pull_request_id  \n"); */
 						for(int i = 1; i < scenarioArr.length; i++)
 						{
 							sb.append("		 , TBL"+i+".device_info AS device_info	\n");
-							sb.append("		 , TBL"+i+".value AS value"+i+"	\n");
-							sb.append("      , TBL"+i+".date AS date"+i+"	\n");
-							sb.append("      , TBL"+i+".version AS version"+i+"	\n");
-							sb.append("      , TBL"+i+".pull_request_id AS pull_request_id"+i+"	\n");
+							sb.append("		 , ifnull(TBL"+i+".value, 0) AS value"+i+"	\n");
+							sb.append("      , ifnull(TBL"+i+".date, '-') AS date"+i+"	\n");
+							sb.append("      , ifnull(TBL"+i+".version, '-') AS version"+i+"	\n");
+							sb.append("      , build.pull_request_id AS pull_request_id"+i+"	\n");
 							sb.append("      , ( SELECT MAX(value) FROM "+tableName+"	\n");
 							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"'	\n");
 							sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"'	\n");
@@ -191,6 +192,8 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 							sb.append("		) "+i+"_MIN    								\n");
 						}
 						sb.append("	FROM                                              	\n");
+						sb.append(" ( select * from build group by pull_request_id order by start_time ) build \n");
+						sb.append(" left join \n");
 						for(int i = 1; i < scenarioArr.length; i++)
 						{
 							sb.append("	(                                               \n");
@@ -221,15 +224,22 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 	    					sb.append("		AND "+tableName+"2.SCENARIO = "+tableName+".SCENARIO  \n");
 	    					sb.append("		GROUP BY "+tableName+".pull_request_id  \n");
 	    					sb.append("	ORDER BY "+tableName+".date ASC , "+tableName+".build_count desc \n");
-							sb.append("	) TBL"+i+"                                      \n");
+							sb.append("	) TBL"+i+"  \n");
 							if(on == i)
 							{
-								sb.append("	ON	TBL"+(i-1)+".ROWNUM = TBL"+i+".ROWNUM      \n");
+								if(on == 1)
+								{
+									sb.append(" ON BUILD.pull_request_id = TBL1.pull_request_id COLLATE utf8_unicode_ci \n");
+								}
+								else
+								{
+									sb.append("	ON	TBL"+(i-1)+".pull_request_id = TBL"+i+".pull_request_id      \n");
+								}
 								on++;
 							}
 							if(i < scenarioArr.length-1)
 							{
-								sb.append(" LEFT JOIN 											\n");
+								sb.append(" LEFT JOIN 		\n");
 							}
 						}
     					//---------------------------------
@@ -289,7 +299,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     					sb.append("	ORDER BY "+tableName+".date ASC , "+tableName+".build_count desc \n");
     				}
     				
-	    			//System.out.println(sb.toString());	    			
+	    			System.out.println(sb.toString());	    			
 	    			ps = conn.prepareStatement(sb.toString());
 	    			rs = ps.executeQuery();
     			}
@@ -298,7 +308,11 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     			{
 		    	 	while(rs.next())
 		    	 	{
-		    	 		deviceInfo = rs.getString("device_info");
+		    	 		if(rs.getString("device_info") != null)
+		    	 		{
+		    	 			deviceInfo = rs.getString("device_info");
+		    	 		}
+		    	 		System.out.println("deviceInfo : " + deviceInfo);
 		    	 		
 		    	 		if(scenario != null && scenario.length() > 0)
 		    	 		{
@@ -405,7 +419,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 					fontSize: 30
 				},
 				fontSize: 12,
-				interpolateNulls: true,
+				interpolateNulls: false,
 				tooltip: {isHtml: true},
 		    	width: 1400, /*'100%'*/
 		    	height: 500,
