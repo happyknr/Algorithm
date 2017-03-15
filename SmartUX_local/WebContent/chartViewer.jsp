@@ -25,7 +25,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 		query += "	group by scenario \n";
 		query += "	order by date desc"; */
 		
-		query = "select scenario, round(value, 3) value, date, build_count from "+tableName+"\n";
+		query = "select scenario, round(value, 3) value, date, concat(pull_request_id,'_',build_count) AS build_count from "+tableName+"\n";
 		query += "  where pull_request_id = '"+pullRequestId+"' \n";
 		if(buildCount != null && buildCount.length() > 0)
 		{
@@ -159,10 +159,11 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 						for(int i = 1; i < scenarioArr.length; i++)
 						{
 							sb.append("		 , TBL"+i+".device_info AS device_info	\n");
-							sb.append("		 , ifnull(TBL"+i+".value, 0) AS value"+i+"	\n");
-							sb.append("      , ifnull(TBL"+i+".date, '-') AS date"+i+"	\n");
-							sb.append("      , ifnull(TBL"+i+".version, '-') AS version"+i+"	\n");
-							sb.append("      , build.pull_request_id AS pull_request_id"+i+"	\n");
+							sb.append("		 , TBL"+i+".value AS value"+i+"	\n");
+							sb.append("      , TBL"+i+".date AS date"+i+"	\n");
+							sb.append("      , TBL"+i+".version AS version"+i+"	\n");
+							sb.append("      , TBL"+i+".pull_request_id AS pull_request_id"+i+"	\n");
+							sb.append("      , TBL"+i+".build_count	AS build_count"+i+"		\n");
 							sb.append("      , ( SELECT MAX(value) FROM "+tableName+"	\n");
 							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"'	\n");
 							sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"'	\n");
@@ -203,6 +204,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 							sb.append("			 , "+tableName+".date                                	\n");
 							sb.append("			 , "+tableName+".version                                	\n");
 							sb.append("      	 , "+tableName+".pull_request_id				\n");
+							sb.append("      	 , "+tableName+".build_count				\n");
 							sb.append("			FROM "+tableName+", (SELECT @ROWNUM"+i+" := 0) R      	\n");
 							sb.append(" 	, ( SELECT scenario, version, date, pull_request_id, MAX(BUILD_COUNT) build_count \n");
 	    					sb.append(" 		FROM "+tableName);
@@ -299,7 +301,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     					sb.append("	ORDER BY "+tableName+".date ASC , "+tableName+".build_count desc \n");
     				}
     				
-	    			System.out.println(sb.toString());	    			
+	    			//System.out.println(sb.toString());	    			
 	    			ps = conn.prepareStatement(sb.toString());
 	    			rs = ps.executeQuery();
     			}
@@ -312,7 +314,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 		    	 		{
 		    	 			deviceInfo = rs.getString("device_info");
 		    	 		}
-		    	 		System.out.println("deviceInfo : " + deviceInfo);
+		    	 		//System.out.println("deviceInfo : " + deviceInfo);
 		    	 		
 		    	 		if(scenario != null && scenario.length() > 0)
 		    	 		{
@@ -328,15 +330,15 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 	//		    	 					System.out.println("value"+i+" : " + rs.getString("value"+i) + ", " + "max"+i+" : "+rs.getString(i+"_MAX")+rs.getString("date"+i)+rs.getString("build_number"+i)+rs.getString("value"+i));
 			    	 					if(rs.getString("value"+i).equals(rs.getString(i+"_MAX")))
 			    	 					{
-			    	 						out.print(rs.getString("value"+i)+", 'MAX', tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("pull_request_id"+i)+","+rs.getString("value"+i)+", '"+rs.getString("version"+i)+"')");
+			    	 						out.print(rs.getString("value"+i)+", 'MAX', tooltipContents('"+rs.getString("date"+i)+"','"+rs.getString("pull_request_id"+i)+"_"+rs.getString("build_count"+i)+"',"+rs.getString("value"+i)+", '"+rs.getString("version"+i)+"')");
 			    	 					}
 			    	 					else if(rs.getString("value"+i).equals(rs.getString(i+"_MIN")))
 			    	 					{
-			    	 						out.print(rs.getString("value"+i)+", 'MIN', tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("pull_request_id"+i)+","+rs.getString("value"+i)+",'"+rs.getString("version"+i)+"')");
+			    	 						out.print(rs.getString("value"+i)+", 'MIN', tooltipContents('"+rs.getString("date"+i)+"','"+rs.getString("pull_request_id"+i)+"_"+rs.getString("build_count"+i)+"',"+rs.getString("value"+i)+",'"+rs.getString("version"+i)+"')");
 			    	 					}
 			    	 					else
 			    	 					{
-			    	 						out.print(rs.getString("value"+i)+", "+null+", tooltipContents('"+rs.getString("date"+i)+"',"+rs.getString("pull_request_id"+i)+","+rs.getString("value"+i)+",'"+rs.getString("version"+i)+"')");
+			    	 						out.print(rs.getString("value"+i)+", "+null+", tooltipContents('"+rs.getString("date"+i)+"','"+rs.getString("pull_request_id"+i)+"_"+rs.getString("build_count"+i)+"',"+rs.getString("value"+i)+",'"+rs.getString("version"+i)+"')");
 			    	 					}
 		    	 					}
 		    	 					else
@@ -356,15 +358,15 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 		    	 				
 		    	 				if(rs.getString("value").equals(rs.getString("maxVal")))
 		    	    	 		{
-		    		    	 		out.print(rs.getString("rownum")+","+rs.getString("value")+", 'MAX', tooltipContents('"+rs.getString("date")+"',"+rs.getString("pull_request_id")+","+rs.getString("value")+",'"+rs.getString("version")+"')");
+		    		    	 		out.print(rs.getString("rownum")+","+rs.getString("value")+", 'MAX', tooltipContents('"+rs.getString("date")+"','"+rs.getString("pull_request_id")+"_"+rs.getString("build_count")+"',"+rs.getString("value")+",'"+rs.getString("version")+"')");
 		    	    	 		}
 		    	    	 		else if(rs.getString("value").equals(rs.getString("minVal")))
 		    	    	 		{
-		    	    	 			out.print(rs.getString("rownum")+","+rs.getString("value")+", 'MIN', tooltipContents('"+rs.getString("date")+"',"+rs.getString("pull_request_id")+","+rs.getString("value")+",'"+rs.getString("version")+"')");
+		    	    	 			out.print(rs.getString("rownum")+","+rs.getString("value")+", 'MIN', tooltipContents('"+rs.getString("date")+"','"+rs.getString("pull_request_id")+"_"+rs.getString("build_count")+"',"+rs.getString("value")+",'"+rs.getString("version")+"')");
 		    	    	 		}
 		    	    	 		else
 		    	    	 		{
-		    	    	 			out.print(rs.getString("rownum")+","+rs.getString("value") +", "+null+", tooltipContents('"+rs.getString("date")+"',"+rs.getString("pull_request_id")+","+rs.getString("value")+",'"+rs.getString("version")+"')");
+		    	    	 			out.print(rs.getString("rownum")+","+rs.getString("value") +", "+null+", tooltipContents('"+rs.getString("date")+"','"+rs.getString("pull_request_id")+"_"+rs.getString("build_count")+"',"+rs.getString("value")+",'"+rs.getString("version")+"')");
 		    	    	 		}
 		    	 			}
 		    	 		}
@@ -460,7 +462,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 	<div id="chart_div" style="display: none;"></div>
 	
 	<div id="tableDiv" style="display: none;">
-		<table style="border-collapse:collapse; width:35%; font-size:14px;" border="1">
+		<table style="border-collapse:collapse; width:45%; font-size:14px;" border="1">
 			<tr style=" background: #efefef;">
 				<th width="33.3%">scenario</th>
 				<th width="33.3%">datetime</th>
