@@ -26,6 +26,13 @@
 		{
 			stmt = conn.createStatement();
 			
+			//----------------------------
+			/* select build.* from build,
+	(select pull_request_id, max(build_count), max(start_time) start_time from build group by pull_request_id order by max(start_time) desc) build_idx
+	where build.pull_request_id = build_idx.pull_request_id
+	order by build_idx.start_time desc, build.build_count desc */			
+			//----------------------------
+			
 			/* query = "select pull_request_id, \n";
 			if(tableName.equals(UX_TABLE_NAME))
 			{
@@ -33,7 +40,7 @@
 			}
 			query += " build_count from "+tableName+" where pull_request_id != '' group by pull_request_id, build_count order by date desc"; */
 			
-			query = "select "+tableName+".pull_request_id, \n";
+			/* query = "select "+tableName+".pull_request_id, \n";
 			if(tableName.equals(UX_TABLE_NAME))
 			{
 				query += " log_path,  \n";
@@ -44,7 +51,28 @@
 			query += "where "+tableName+".pull_request_id != '' \n";
 			query += " and "+tableName+".pull_request_id = temp.pull_request_id \n";
 			query += " group by pull_request_id, build_count \n";
-			query += "order by rownum desc, "+tableName+".date desc";
+			query += "order by rownum desc, "+tableName+".date desc"; */
+			
+			
+			query = " select distinct("+tableName+".pull_request_id), \n";
+			if(tableName.equals(UX_TABLE_NAME))
+			{
+				query += " log_path,  \n";
+			}
+			query += " "+tableName+".build_count  from    \n";
+			query += " ( \n";
+			query += " 	select @rownum := @rownum+1 as rownum, pull_request_id, build_count, start_time \n";
+			query += " 	from  \n";
+			query += " 	( \n";
+			query += " 	select build.* from build,  \n";
+			query += " 		(select pull_request_id, max(build_count), max(start_time) start_time from build group by pull_request_id order by max(start_time) desc) build_idx \n";
+			query += " 		where build.pull_request_id = build_idx.pull_request_id \n";
+			query += " 		order by build_idx.start_time desc, build.build_count desc \n";
+			query += " 	) build, (select @rownum := 0) R \n";
+			query += " ) build, "+tableName+" \n";
+			query += " where build.pull_request_id = "+tableName+".pull_request_id COLLATE utf8_unicode_ci  \n";
+			query += " and build.build_count = "+tableName+".build_count COLLATE utf8_unicode_ci \n";
+			query += " order by rownum \n";
 			
 			//System.out.println(query);
 			
@@ -141,7 +169,7 @@
 	String pullRequestId = request.getParameter("pull_request_id");
 	String pBuildCount = request.getParameter("build_count");
 	
-	System.out.println("buildNumber["+pBuildCount+"]");
+	//System.out.println("buildNumber["+pBuildCount+"]");
 	
 	if(tableName == null || tableName == "")
 	{
@@ -403,7 +431,7 @@
 	});
 </script>
 </head>
-<body>
+<body oncontextmenu="return false" >
 	<form name="chartPageForm" action="chartViewer.jsp" method="POST">
 		<input type="hidden" name="tableName" value="">
 		<input type="hidden" name="scenario" value="">
@@ -424,7 +452,7 @@
 	</form>
 
 <div id="selBuildInfoDiv" style="height: 60px;">
-	<input type="button" value="back" onclick="location.href='launcher.jsp'" style="float: left; margin-right: 5px;">
+	<input type="button" value="BACK" onclick="location.href='launcher.jsp'" style="float: left; margin-right: 5px;">
 	
 	<!-- EX build number -->
 	<div id="exbuildNumberDiv" style="">
@@ -518,7 +546,11 @@
 			<%
 			prevNumber = "";
 			String[] allLogPath = new String[uxBuildInfoList.size()];
-			String pull_request_id = uxBuildInfoList.get(0).get("pull_request_id");
+			String pull_request_id = "";
+			if(uxBuildInfoList != null && uxBuildInfoList.size() > 0)
+			{
+				uxBuildInfoList.get(0).get("pull_request_id");
+			}
 			for(int i = 0; i < uxBuildInfoList.size(); i++)
 			{
 				allLogPath[i] = "";
