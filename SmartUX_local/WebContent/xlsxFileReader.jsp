@@ -16,6 +16,23 @@
 <%! 
 	static final int MAX_OVERVIEW_CELL = 2;
 	static final String MP4_FILENAME = "test_";
+	
+	public Map<String, String> changeOverviewKeyName(Map<String, String> map)
+	{
+		Map<String, String> newOverviewName = new LinkedHashMap<String, String>();
+		
+		newOverviewName.put("테스트명", map.get("Test Name"));
+		newOverviewName.put("테스트 대상 버전", map.get("Package Version"));
+		newOverviewName.put("테스트 수행일", map.get("Test Date"));
+		newOverviewName.put("테스트케이스 #", map.get("Test Case #"));
+		newOverviewName.put("PASS #", map.get("Pass #"));
+		newOverviewName.put("FAIL #", map.get("Fail #"));
+		newOverviewName.put("테스트 단말", map.get("Device Name"));
+		newOverviewName.put("단말 OS", map.get("Device Version"));
+		
+		map.clear();
+		return newOverviewName;
+	}
 %>
 
 <%
@@ -193,20 +210,7 @@ try
 		}
 	}
 	
-	/* for(int i = 0; i < allTestcaseList.size(); i++)
-	{
-		//System.out.println(allTestcaseList.get(i));
-		ArrayList<String> tmpList = (ArrayList<String>)allTestcaseList.get(i).get("list");
-		Iterator<String> iter = tmpList.iterator();
-		System.out.println("----------- "+i+"---------------");
-		while(iter.hasNext())
-		{
-			String[] arr = iter.next().split(";");
-				for(int j = 0; j < arr.length; j++)
-				System.out.println(arr[j]);
-		}
-		System.out.println("--------------------------");
-	}  */
+	overviewHashmap = changeOverviewKeyName(overviewHashmap);
 }
 catch(Exception e)
 {
@@ -222,7 +226,7 @@ catch(Exception e)
 		if(status == 'none')
 		{
 			document.getElementById("testCaseDiv").style.display = 'none';
-			document.getElementById("overviewDiv").style.display = '';
+			/* document.getElementById("overviewDiv").style.display = ''; */
 			
 			var div = document.getElementById("testCaseDiv").getElementsByTagName("div");
 			for(var i = 1; i < div.length; i++)
@@ -238,26 +242,49 @@ catch(Exception e)
 				div[i].style.display = 'none';
 			}
 			
-			document.getElementById("overviewDiv").style.display = 'none';
-			console.log(status);
+			/* document.getElementById("overviewDiv").style.display = 'none'; */
 			document.getElementById(status).style.display = '';
 			document.getElementById("testCaseDiv").style.display = '';
 		}
 	}
 	
+	window.onload = function(){
+		display('body0');
+	};
 </script>
 </head>
 <body>
 <div id="mainDiv" >
- 	<div id='resultDiv' class='divStyle' style='width: 30%; float: left;'>
-		<h3>Result</h3>
+	<div id='overviewDiv' class='divStyle' style='width: 20%; float: left; /* border: 1px solid black */'>
+		<h3>Overview</h3>
+<%
+		out.print("<table class='type05'>");
+		for(String key : overviewHashmap.keySet())
+		{
+			out.print("<tr><th>"+key+"</th>");
+			if("FAIL #".equals(key) && !"0".equals(overviewHashmap.get(key)))
+			{
+				out.print("<td style='width: 50%; color: red; font-weight: bold;'>"+overviewHashmap.get(key)+"</td></tr>");
+			}
+			else
+			{
+				out.print("<td style='width: 50%;'>"+overviewHashmap.get(key)+"</td></tr>");
+			}
+		}
+		out.print("</table>");
+%>		
+	</div>
+ 	<div id='resultDiv' class='divStyle' style='width: 35%; float: left;'>
+		<h3>Testcase</h3>
 <%
  		out.print("<table class='type05'>");
 		out.print("<tr>");
-		out.print("<th>Test Case</th>");
-		out.print("<th>Result</th>");
+		out.print("<th>#</th>");
+		out.print("<th>Testcase명</th>");
+		out.print("<th>결과</th>");
+		out.print("<th>동영상</th>");
 		out.print("</tr>");
-		int idx = 0;
+		int idx = 0, testcaseIdx = 1;
 		for(int i = 0; i < allData.size(); i++)
 		{
 			tmpArr = allData.get(i);
@@ -268,10 +295,19 @@ catch(Exception e)
 					//System.out.println(">> "+ tmpArr[1]);
 					//System.out.println(">> "+ tmpArr[2]);
 					out.print("<tr>");
-					out.print("<td style='cursor: pointer;' onClick="+"display('body"+idx+"')"+">"+ tmpArr[1] + "</td>");
+					out.print("<td style='width: 5%'>"+testcaseIdx+"</td>"); testcaseIdx++;
+					if(tmpArr[1].length() > 30)
+					{
+						out.print("<td style='width: 75%; font-size: 11px; cursor: pointer; text-align: left;' onClick="+"display('body"+idx+"')"+">"+ tmpArr[1] + "</td>");
+					}
+					else
+					{
+						out.print("<td style='width: 75%; cursor: pointer; text-align: left;' onClick="+"display('body"+idx+"')"+">"+ tmpArr[1] + "</td>");
+					}
 					if(tmpArr[2].equals("FAIL"))
 					{
-						out.print("<td style='color: red; font-weight: bold;'>"+ tmpArr[2]);
+						out.print("<td style='width:10%; color: red; font-weight: bold;'>"+ tmpArr[2]+"</td>");
+						out.print("<td stye='width:10%; '>");
 						String mp4FileName = null;
 						for(int j = 0; j < files.length; j++)
 						{
@@ -280,7 +316,7 @@ catch(Exception e)
 								if(files[j].equals(MP4_FILENAME+(idx+1)+"_"+(k+1)+".mp4"))
 								{
 									mp4FileName = files[j];
-									out.print("&nbsp;<a href='"+mp4FilePath+mp4FileName+"' target='_blank'><img src='icon/mp4.PNG'/></a>");
+									out.print("<a href='"+mp4FilePath+mp4FileName+"' target='_blank'><img src='icon/mp4.PNG'/></a>");
 								}
 							}
 						}
@@ -288,7 +324,7 @@ catch(Exception e)
 					}
 					else
 					{
-						out.print("<td>"+ tmpArr[2] +"</td>");
+						out.print("<td stye='width:10%; '>"+ tmpArr[2] +"</td><td stye='width:10%; '></td>");
 					}
 					out.print("<tr>");
 					idx++;
@@ -298,40 +334,25 @@ catch(Exception e)
 		out.print("</table>"); 
 %>		
 	</div>
-	<div id='overviewDiv' class='divStyle' style='width: 30%; float: left; /* border: 1px solid black */'>
-		<h3>Overview</h3>
-<%
-
-		Iterator<String> iterator = overviewHashmap.keySet().iterator();
-		out.print("<table class='type05'>");
-		while(iterator.hasNext())
-			
-		{
-			String key = iterator.next();
-			//System.out.println(">>>>>>>> " + key + ", " + overviewHashmap.get(key));
-			out.print("<tr><th>"+key+"</th>");
-			out.print("<td>"+overviewHashmap.get(key)+"</td></tr>");
-		}
-		out.print("</table>"); 
-%>		
-	</div>
-	<div id='testCaseDiv' class='divStyle' style='width: 30%; float: left; display: none; /* border: 1px solid black */'> 
+	<div id='testCaseDiv' class='divStyle' style='width: 35%; float: left; /* border: 1px solid black */'> 
 		<div id='header' style='margin: 0px;'>
-			<h3 style='float: left;'>Test Case</h3>
-			<h5 style='float: right; cursor: pointer;' onClick="display('none')">X</h5>
+			<h3 style='float: left;'>Teststep</h3>
+			<!-- <h5 style='float: right; cursor: pointer;' onClick="display('none')">X</h5> -->
 		</div>
 <%
+		int teststepIdx = 1;
  		for(int i = 0; i < allTestcaseList.size(); i++) 
 		{
 			out.print("<div id='body"+i+"' style='display: none; float: left; margin: 0px;'>");
 			out.print("<table class='type05'>");
-			out.print("<tr><th>Description</th><th colspan='"+maxCol+"'>Result</th></tr>");
+			out.print("<tr><th>#</th><th style='width: 60%'>Teststep</th><th colspan='"+maxCol+"'>결과</th></tr>");
 			//System.out.println(allTestcaseList.get(i));
 			ArrayList<String> tmpList = (ArrayList<String>)allTestcaseList.get(i).get("list");
 			Iterator<String> iter = tmpList.iterator(); 
 			while(iter.hasNext())
 			{
 				out.print("<tr>");
+				out.print("<td style='width: 10%;'>"+teststepIdx+"</td>"); teststepIdx++;
 				String[] arr = iter.next().split(";");
 				for(int j = 1; j < arr.length; j++)
 				{
@@ -342,13 +363,21 @@ catch(Exception e)
 					}
 					else
 					{
-						out.print("<td>"+arr[j]+"</td>");
+						if(arr[j].equals("PASS"))
+						{
+							out.print("<td>"+arr[j]+"</td>");
+						}
+						else
+						{
+							out.print("<td style='text-align: left;'>"+arr[j]+"</td>");
+						}
 					}
 				}
 				out.print("</tr>");
 			}
 			out.print("</table>");
 			out.print("</div>");
+			teststepIdx = 1;
 		} 
 %>		
 	</div>
