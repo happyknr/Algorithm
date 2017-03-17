@@ -37,8 +37,8 @@ try
 	
 	if(params == null)
 	{
-		path = "http://10.211.22.36:8080/view/Test%20Job/job/E2E_tmaptaxi/lastBuild/api/json";
-		//path = "http://10.211.23.122:8080/job/AgingTestProjectForHana/lastBuild/api/json";
+		//path = "http://10.211.22.36:8080/view/Test%20Job/job/E2E_tmaptaxi/lastBuild/api/json";
+		path = "http://10.211.23.122:8080/job/AgingTestProjectForHana/lastBuild/api/json";
 	}
 	else
 	{

@@ -42,7 +42,7 @@ body {
 					$("#showStatus").html(data); 
 				} 
 			});
-		}, 30000);
+		}, 10000);
 	});
 </script>
 </head>
