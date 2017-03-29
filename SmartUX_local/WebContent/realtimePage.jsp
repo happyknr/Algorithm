@@ -4,6 +4,7 @@
 <%@ page import="java.text.*" %>
 <%@ page import="java.lang.String.*" %>
 <%@ page import="java.util.Date" %>
+<%@ page import="com.common.*" %>
 <%@ include file="dbConnection.jsp" %>
 <%
 request.setCharacterEncoding("utf-8");
@@ -14,6 +15,9 @@ String sdate = request.getParameter("sdate");
 String edate = request.getParameter("edate");
 String tabName = request.getParameter("tabName");
 String deviceInfo = null;
+
+Common common = new Common();
+DBUtils db = new DBUtils();
 
 //System.out.println("subMenu : [" + psubMenu + "] appversion : [" + pappVersion + "] sdate : ["+sdate+"] edate : ["+edate+"] tabName : ["+tabName+"]");
 
@@ -31,167 +35,23 @@ if(tabName == null || tabName == "")
 	}
 }
 
-if(sdate == null || sdate == "")
-{
-	String lastMonth = "";
-	Calendar cal = Calendar.getInstance();
-	cal.add ( cal.MONTH, -1 );
-	if(cal.get(cal.MONTH) < 10) 
-	{
-		if(cal.get(cal.DATE) < 10)
-		{
-			lastMonth = cal.get(cal.YEAR) + "-0" + (cal.get ( cal.MONTH )+1)  + "-0" + cal.get(cal.DATE);
-		}
-		else
-		{
-			lastMonth = cal.get(cal.YEAR) + "-0" + (cal.get ( cal.MONTH )+1)  + "-" + cal.get(cal.DATE);
-		}
-	} 
-	else
-	{
-		if(cal.get(cal.DATE) < 10)
-		{
-			lastMonth = cal.get(cal.YEAR) + "-" + (cal.get ( cal.MONTH )+1)  + "-0" + cal.get(cal.DATE);
-		}
-		else
-		{
-			lastMonth = cal.get(cal.YEAR) + "-" + (cal.get ( cal.MONTH )+1)  + "-" + cal.get(cal.DATE);
-		}
-	}
-	//System.out.println(lastMonth);
-	sdate = lastMonth;
-}
+sdate = common.getDate(sdate);
 
 Statement stmt=null;
 ResultSet rs1 = null, rs3 = null ;
 String query=null;
-ArrayList<HashMap<String, String>> subMenuArr = null;
+ArrayList<Map<String, String>> subMenuArr = null;
 HashMap<String, String> subMenuMap = null;
 ArrayList<String> appVersionArr = null; /* app version */
 
-try
-{
-	stmt = conn.createStatement();
-	
-	/* 시나리오 조회 쿼리 */
-	query = "SELECT DISTINCT(SCENARIO) AS SUBMENU \n";
-	query += "		, ROUND(AVG(VALUE), 3) AS AVG \n";
-	query += " 		, COUNT(SCENARIO) CNT \n";
-	query += "	FROM "+tabName+" WHERE PACKAGE_NAME = '"+packageName+"'";
-	query += "			AND value != 0 \n";
-	query += "			AND ( pull_request_id is null or pull_request_id = '' ) \n";
-	if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
-	{
-		query += "	 	AND VERSION = '" +pappVersion+"'  \n";
-	}
-	if(sdate != null && sdate != "")
-	{
-		query += "		AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n";
-	}
-	if(edate != null && edate != "")
-	{
-		query += "		AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n";
-	}
-	query += " 	GROUP BY SCENARIO \n";
-	query += "  ORDER BY CNT DESC \n";
-	//System.out.println("SCENARIO QUERY : " + query);
-	rs3 = stmt.executeQuery(query);
-	
-	subMenuArr = new ArrayList<HashMap<String, String>>();
-	
-	while(rs3.next())
-	{
-		if(rs3.getString("SUBMENU") != null && rs3.getString("SUBMENU").length() > 0)
-		{
-			subMenuMap = new HashMap<String, String>();
-			subMenuMap.put("SCENARIO", rs3.getString("SUBMENU"));
-			subMenuMap.put("AVERAGE", rs3.getString("AVG"));
-			subMenuArr.add(subMenuMap);
-		}
-	}
-	
-	/* 앱 버전 조회 쿼리 */
-	query = "SELECT DISTINCT(VERSION) AS VERSION FROM "+tabName+" WHERE PACKAGE_NAME='"+packageName+"' AND ( pull_request_id is null or pull_request_id = '' ) \n"; // AND type = '"+REAL_TIME+"'";
-	//System.out.println("VERSION QUERY : " + query);
-	
-	rs3 = stmt.executeQuery(query);
-	
-	appVersionArr = new ArrayList<String>();
-	
-	while(rs3.next())
-	{
-		if(rs3.getString("VERSION") != null && rs3.getString("VERSION").length() > 0)
-		{
-			appVersionArr.add(rs3.getString("VERSION"));
-		}
-	}
-}
-catch(Exception e)
-{
-	e.printStackTrace();
-}
+subMenuArr = db.getScenario(packageName, tabName, pappVersion, sdate, edate); // 시나리오 조회
+appVersionArr = db.getRealtimeVersion(packageName, tabName); // 앱 버전 조회
 
 %>
 
 <html>
 <head>
-<style type="text/css">
-	
-	body {
-            font-family:"Malgun Gothic";
-            font-size: 0.8em;
-			margin: 20px;
-        }
-        /*TAB CSS*/
-
-        ul.tabs {
-            margin: 0;
-            padding: 0;
-            float: left;
-            list-style: none;
-            height: 32px; /*--Set height of tabs--*/
-            border-bottom: 1px solid #999;
-            border-left: 1px solid #999;
-            width: 90%;
-        }
-        ul.tabs li {
-            float: left;
-            margin: 0;
-            padding: 0;
-            height: 31px; /*--Subtract 1px from the height of the unordered list--*/
-            line-height: 31px; /*--Vertically aligns the text within the tab--*/
-            border: 1px solid #999;
-            border-left: none;
-            margin-bottom: -1px; /*--Pull the list item down 1px--*/
-            overflow: hidden;
-            position: relative;
-            background: #e0e0e0;
-        }
-        ul.tabs li a {
-            text-decoration: none;
-            color: #000;
-            display: block;
-            font-size: 1.2em;
-            padding: 0 20px;
-            /*--Gives the bevel look with a 1px white border inside the list item--*/
-            border: 1px solid #fff; 
-            outline: none;
-        }
-        ul.tabs li a:hover {
-            background: #ccc;
-        }
-        html ul.tabs li.active, html ul.tabs li.active a:hover  {
-             /*--Makes sure that the active tab does not listen to the hover properties--*/
-            background: #fff;
-            /*--Makes the active tab look like it's connected with its content--*/
-            border-bottom: 1px solid #fff; 
-        }
-
-        /* .tab_content {
-            padding: 20px;
-            font-size: 1.2em;
-        } */
-</style>
+<link href="css/style.css" rel="stylesheet" type="text/css">
 <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.6.4.min.js"></script>
 <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 <script type="text/javascript">
@@ -383,10 +243,6 @@ var appMenu = '';
 <%
 	}
 %>
-      // var formatter = new google.visualization.NumberFormat({
-      //   pattern: '#.###'
-      // });
-      // formatter.format(data, 2);
 
       data.addRows([
 <%
@@ -444,7 +300,7 @@ try
 				{
 					query += "					AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n";
 				}
-				query += "			AND value != 0 						\n";
+				/* query += "			AND value != 0 						\n"; */
 				query += "		) "+i+"_MIN    								\n";
 			}
 			query += "	FROM                                              	\n";
@@ -472,7 +328,8 @@ try
 				{
 					query += "					AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n";
 				}
-				query += "			AND value != 0 						\n";
+				/* query += "			AND value != 0 						\n"; */
+				query += " order by "+tabName+".date";
 				query += "	) TBL"+i+"                                      \n";
 				if(on == i)
 				{
@@ -601,9 +458,6 @@ try
 		}
 		query += " ORDER BY date ASC ";
 		
-// 		System.out.println(" ========================================== all query ================================================= ");
-// 		System.out.println(query);
-// 		System.out.println(" ========================================== all query ================================================= ");
 	}
 	rs1 = stmt.executeQuery(query);
 
@@ -613,11 +467,6 @@ try
 	{
 		String idx = rs1.getString("ROWNUM");
 		deviceInfo = rs1.getString("device_info");
-		/* SimpleDateFormat tform = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.0");
-		java.util.Date date = tform.parse(dateF);
-		
-		Calendar c = Calendar.getInstance();
-		c.setTime(date); */
     
 		if( ( psubMenu != null && psubMenu.length() != 0 ) && psubMenu.equals("all") )
 		{
@@ -626,9 +475,15 @@ try
 			out.print("["+idx+", ");
 			for(int i = 0 ; i < subMenuArr.size(); i++)
 			{
+				String value = rs1.getString("value"+i);
+				
 				if( rs1.getString("value"+i) != null )
 				{
 					version = rs1.getString("VERSION"+i);
+					if(rs1.getString("value"+i).equals("0"))
+					{
+						value = null;
+					}
 				}
 				
 				if( version != null ) //해당 시나리오 값 존재, 버전 존재...........
@@ -637,11 +492,11 @@ try
 					{
 						if(rs1.getString("value"+i).equals(rs1.getString(i+"_MAX")) )
 						{
-							out.print(rs1.getString("value"+i)+ ", " + null + ", 'MAX', tooltipContents('" + rs1.getString("date"+i) + "', " + rs1.getString("value"+i)+")");
+							out.print(value+ ", " + null + ", 'MAX', tooltipContents('" + rs1.getString("date"+i) + "', " + rs1.getString("value"+i)+")");
 						}
 						else if(rs1.getString("value"+i).equals(rs1.getString(i+"_MIN")) )
 						{
-							out.print(rs1.getString("value"+i)+ ", " + null + ", 'MIN', tooltipContents('" + rs1.getString("date"+i) + "', " + rs1.getString("value"+i)+")");
+							out.print(value+ ", " + null + ", 'MIN', tooltipContents('" + rs1.getString("date"+i) + "', " + rs1.getString("value"+i)+")");
 						}
 						else
 						{
@@ -652,11 +507,11 @@ try
 					{
 						if(rs1.getString("value"+i).equals(rs1.getString(i+"_MAX")) )
 						{
-							out.print(rs1.getString("value"+i)+ ", '" + version + "', 'MAX', tooltipContents('" + rs1.getString("date"+i) + "', " + rs1.getString("value"+i)+")");
+							out.print(value+ ", '" + version + "', 'MAX', tooltipContents('" + rs1.getString("date"+i) + "', " + rs1.getString("value"+i)+")");
 						}
 						else if(rs1.getString("value"+i).equals(rs1.getString(i+"_MIN")) )
 						{
-							out.print(rs1.getString("value"+i)+ ", '" + version + "', 'MIN', tooltipContents('" + rs1.getString("date"+i) + "', " + rs1.getString("value"+i)+")");
+							out.print(value+ ", '" + version + "', 'MIN', tooltipContents('" + rs1.getString("date"+i) + "', " + rs1.getString("value"+i)+")");
 						}
 						else
 						{
@@ -771,7 +626,6 @@ finally
 	formatter.format(data, 0);
 	
 	var maxY = 10.0;
-	var interpolateNullsOption = false;
 	var cnt = 0;
 	var title = '런처플래닛 ';
 	
@@ -781,7 +635,6 @@ finally
 		{
 %>
 			maxY = 20.0;
-			interpolateNullsOption = true;
 <%		}
 		else
 		{
@@ -820,7 +673,7 @@ finally
 		{
 			fontSize: 30
 		},
-		interpolateNulls: interpolateNullsOption,
+		interpolateNulls: false,
 		legend: {position: 'right'},
 		width: 1400, /*'100%'*/
 		height: 600,
@@ -895,10 +748,7 @@ finally
 	</select>
 
 <!-- 조회 기간 입력창 -->
-<!-- <input placeholder="시작일" type="text" onfocus="this.type='date'; this.setAttribute('onfocus','');this.blur();this.focus();">
-<input placeholder="종료일" type="text" onfocus="this.type='date'; this.setAttribute('onfocus','');this.blur();this.focus();"> -->
-<input type="date" name="sDate" value="">~
-<input type="date" name="eDate" value="">
+<input type="date" name="sDate" value="">~<input type="date" name="eDate" value="">
   
 </div>
 <br/>

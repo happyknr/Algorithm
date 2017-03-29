@@ -1,3 +1,4 @@
+<%@page import="com.common.FileUtils"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@page import="java.util.LinkedHashMap"%>
 <%@page import="java.util.Iterator"%>
@@ -12,36 +13,9 @@
 <%@ page import="org.apache.poi.xssf.usermodel.XSSFRow"%>
 <%@ page import="org.apache.poi.xssf.usermodel.XSSFSheet"%>
 <%@ page import="org.apache.poi.xssf.usermodel.XSSFWorkbook"%>
+<%@ page import="com.common.Common" %>
 
-<%!
-public final int COMPARETYPE_NAME = 0;
-public final int COMPARETYPE_DATE = 1;
-
-static final String DEFUALT_PATH = "SmartUX\\logs\\";
-
-/* 파일 정렬을 위한 메소드 */
-public File[] sortFileList(File[] files) 
-{
-	Arrays.sort(files, new Comparator<Object>() 
-	{
-		public int compare(Object object1, Object object2) 
-		{
-			File f1 = (File)object1;
-			File f2 = (File)object2;
-			
-			if (f1.lastModified() > f2.lastModified())
-			return -1;
-			
-			if (f1.lastModified() == f2.lastModified())
-			return 0;
-			
-			return 1;
-		}
-	});
-	
-	return files;
-}
-%>
+<%! static final String DEFUALT_PATH = "SmartUX\\logs\\"; %>
 
 <%
 	request.setCharacterEncoding("utf-8");
@@ -59,6 +33,8 @@ public File[] sortFileList(File[] files)
 	//String logFilePath = application.getRealPath("/")+"SmartUX\\logs\\"; //+packageName+"\\"+testName+"\\"+logFile;
 	//String[] logFileDepth = {};
 	
+	Common co = new Common();
+	FileUtils fileUtil = new FileUtils();
 	
 	if(pLogPath != null && pLogPath.length() > 0)
 	{
@@ -92,24 +68,7 @@ public File[] sortFileList(File[] files)
 		packageName = "com_skp_launcher";
 	}
 	
-	HashMap<String, String> packageNameOption = new LinkedHashMap<String, String>();
-	
-	packageNameOption.put("com_skt_tlife","T life");
-	packageNameOption.put("skplanet_musicmate","Musicmate");
-	packageNameOption.put("com_skt_sh","Smart Home");
-	packageNameOption.put("com_real_tcolorring","T colorring");
-	packageNameOption.put("com_skt_skaf_l001mtm091","T map");
-	packageNameOption.put("com_skplanet_tmaptaxi_android_passenger","T taxi");
-	packageNameOption.put("com_skp_lbs_ptransit","T 대중교통");
-	packageNameOption.put("com_skp_launcher_theme","T 배경화면");
-	packageNameOption.put("com_skplanet_weatherpong_mobile","Weatherpong");
-	packageNameOption.put("com_skp_tsearch","T 검색");
-	packageNameOption.put("com_sktechx_volo","VOLO");
-	packageNameOption.put("com_skt_prod_cloud","클라우드베리");
-	packageNameOption.put("com_skp_launcher","런처플래닛");
-	packageNameOption.put("com_sktechx_datasoda","데이터소다 ");
-
-	//String logFilePath = request.getRealPath("/")+"../SmartUX/logs/";
+	HashMap<String, String> packageNameOption = co.getPackageName_UX();
 
  	File file = new File(logFilePath);
 	File file2 = null;
@@ -135,7 +94,7 @@ public File[] sortFileList(File[] files)
 					if(file3.length > 0)
 					{
 						//logFileList = file3.list();
-						file3 = sortFileList(file3);
+						file3 = fileUtil.sortFileList_desc(file3);
 						logFileList = new String[file3.length];
 						for(int i = 0; i < file3.length; i++)
 						{
@@ -146,10 +105,6 @@ public File[] sortFileList(File[] files)
 				}
 			}
 		}
-		
-		/* System.out.println(packageList.length);
-		System.out.println(testNameList.length);
-		System.out.println(logFileList.length); */
 	}
 	catch(Exception e)
 	{
@@ -173,14 +128,14 @@ public File[] sortFileList(File[] files)
 			if(testNameList.length > 0 )
 			{
 %>
-			$("#packageNameForm input[name='packageName']").attr("value","<%=packageName%>");
-			$("#packageNameForm input[name='testName']").attr("value","<%=testNameList[0]%>");
+				$("#packageNameForm input[name='packageName']").attr("value","<%=packageName%>");
+				$("#packageNameForm input[name='testName']").attr("value","<%=testNameList[0]%>");
 			<%
-			if(pLogPath != null && pLogPath.length() > 0)
-			{
+				if(pLogPath != null && pLogPath.length() > 0)
+				{
 			%>
-			$("#packageNameForm input[name='pLogPath']").attr("value","<%=pLogPath.replace("\\", "\\\\")%>");
-<%			}
+					$("#packageNameForm input[name='pLogPath']").attr("value","<%=pLogPath.replace("\\", "\\\\")%>");
+<%				}
 			}
 		}
 		else
@@ -193,7 +148,7 @@ public File[] sortFileList(File[] files)
 			if(pLogPath != null && pLogPath.length() > 0)
 			{
 			%>
-			$("#packageNameForm input[name='pLogPath']").attr("value","<%=pLogPath.replace("\\", "\\\\")%>");
+				$("#packageNameForm input[name='pLogPath']").attr("value","<%=pLogPath.replace("\\", "\\\\")%>");
 <%			}
 		}
 %>
@@ -230,16 +185,13 @@ public File[] sortFileList(File[] files)
 		if(logFile != "" && logFile != null && logFile.length() > 0 )
 		{
 %>
-			<%-- var param = "C:/Users/knr/workspace/SmartUX_local/WebContent/SmartUX/logs/<%=packageName%>/<%=testName%>/<%=logFile%>/<%=logFile+".xlsx"%>"; --%>
 			var param = "<%=paramLogFilePath%>/<%=packageName%>/<%=testName%>/<%=logFile%>/";
-			<%-- var param = "<%=logFilePath%>/<%=packageName%>/<%=testName%>/<%=logFile%>/"; --%>
 			document.parentFrameForm.filePath.value = param;
 			document.parentFrameForm.target = "fileReader";
 			document.parentFrameForm.submit();
 <%
 		}
 %>
-
 		$("#selPackageName").change(function()
 		{
 			var selectedPackageName = $("#selPackageName").val();
@@ -257,7 +209,7 @@ public File[] sortFileList(File[] files)
 			if(pLogPath != null && pLogPath.length() > 0)
 			{
 			%>
-			$("#packageNameForm input[name='pLogPath']").attr("value","<%=pLogPath.replace("\\", "\\\\")%>");
+				$("#packageNameForm input[name='pLogPath']").attr("value","<%=pLogPath.replace("\\", "\\\\")%>");
 			<%
 			}%>
 			$("#packageNameForm").attr({action:'resultViewer.jsp', method:'post'}).submit();
@@ -313,20 +265,6 @@ public File[] sortFileList(File[] files)
 		<input type="hidden" name="logFile" value="">
 		<input type="hidden" name="pLogPath" value="">
 		<select id="selPackageName">
-			<!-- <option selected disabled>Choose Service Name</option> -->
-<%-- <%
-		for(int i = 0; i < packageList.length; i++)
-		{
-			{
-				if(packageList[i].equals(packageName))
-				{
-%>		
-			<option value="<%=packageList[i] %>" selected disabled><%=packageNameOption.get(packageList[i]) %></option>
-<%
-				}
-			}
-		}
-%>	 --%>
 			<option value="<%=packageName %>" selected disabled><%=packageNameOption.get(packageName) %></option>
 		</select>
 	</form>
@@ -339,15 +277,7 @@ public File[] sortFileList(File[] files)
 	{
 		for(int i = 0; i < testNameList.length; i++)
 		{
-			/* for(int j = 0; j < logFiles.length; j++)
-			{
-				if(logFiles[j].equals(testNameList[i]))
-				{ */
-%>
-					<option value="<%=testNameList[i]%>"><%=testNameList[i]%></option>
-<%	
-			/* 	}
-			} */
+			out.print("<option value='"+testNameList[i]+"'>"+testNameList[i]+"</option>");
 		}
 	}
 %>
@@ -367,17 +297,11 @@ public File[] sortFileList(File[] files)
 				{
 					if(logFileList[i].equals(logFile))
 					{
-						//System.out.println(logFile + "##########" + logFileList[i]);
-%>
-						<option value="<%=logFileList[i]%>" selected><%=logFileList[i]%></option>
-<%			
+						out.print("<option value='"+logFileList[i]+"' selected>"+logFileList[i]+"</option>");
 					}
 					else
 					{
-						//System.out.println(logFile + "######@@@@@@####" + logFileList[i]);
-%>					
-						<option value="<%=logFileList[i]%>"><%=logFileList[i]%></option>
-<%
+						out.print("<option value='"+logFileList[i]+"'>"+logFileList[i]+"</option>");
 					}
 				}
 			}

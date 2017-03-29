@@ -1,3 +1,4 @@
+<%@page import="com.common.FileUtils"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.lang.reflect.Array"%>
 <%@ page import="java.util.List"%>
@@ -12,27 +13,11 @@
 <%@ page import="org.apache.poi.xssf.usermodel.XSSFRow"%>
 <%@ page import="org.apache.poi.xssf.usermodel.XSSFSheet"%>
 <%@ page import="org.apache.poi.xssf.usermodel.XSSFWorkbook"%>
+<%@ page import="com.common.Common" %>
 
 <%! 
 	static final int MAX_OVERVIEW_CELL = 2;
 	static final String MP4_FILENAME = "test_";
-	
-	public Map<String, String> changeOverviewKeyName(Map<String, String> map)
-	{
-		Map<String, String> newOverviewName = new LinkedHashMap<String, String>();
-		
-		newOverviewName.put("테스트명", map.get("Test Name"));
-		newOverviewName.put("테스트 대상 버전", map.get("Package Version"));
-		newOverviewName.put("테스트 수행일", map.get("Test Date"));
-		newOverviewName.put("테스트케이스 #", map.get("Test Case #"));
-		newOverviewName.put("PASS #", map.get("Pass #"));
-		newOverviewName.put("FAIL #", map.get("Fail #"));
-		newOverviewName.put("테스트 단말", map.get("Device Name"));
-		newOverviewName.put("단말 OS", map.get("Device Version"));
-		
-		map.clear();
-		return newOverviewName;
-	}
 %>
 
 <%
@@ -41,6 +26,8 @@
 	//System.out.println("filePath : " + filePath);
 	String excelFileName = null;
 	String mp4FilePath = null;
+	
+	FileUtils fileUtil = new FileUtils();
 	
 	File file = null;
 	String[] files = {};
@@ -196,21 +183,18 @@ try
 					{
 						maxCol = tmpArr.length;
 					}
-					//System.out.println();
 				}
 				testcaseList.add(tmp);
 			}
-			//System.out.println();
 			if(i == (allData.size()-1))
 			{
-				//System.out.println("===============================================");
 				testcaseHashmap.put("list", testcaseList);
 				allTestcaseList.add(testcaseHashmap);
 			}
 		}
 	}
 	
-	overviewHashmap = changeOverviewKeyName(overviewHashmap);
+	overviewHashmap = fileUtil.changeOverviewKeyName(overviewHashmap);
 }
 catch(Exception e)
 {
@@ -274,7 +258,7 @@ catch(Exception e)
 		out.print("</table>");
 %>		
 	</div>
- 	<div id='resultDiv' class='divStyle' style='width: 35%; float: left;'>
+ 	<div id='resultDiv' class='divStyle' style='width: 38%; float: left;'>
 		<h3>Testcase</h3>
 <%
  		out.print("<table class='type05'>");
@@ -344,7 +328,7 @@ catch(Exception e)
  		for(int i = 0; i < allTestcaseList.size(); i++) 
 		{
 			out.print("<div id='body"+i+"' style='display: none; float: left; margin: 0px;'>");
-			out.print("<table class='type05'>");
+			out.print("<table class='type05' style='margin: 5px;'>");
 			out.print("<tr><th>#</th><th style='width: 60%'>Teststep</th><th colspan='"+maxCol+"'>결과</th></tr>");
 			//System.out.println(allTestcaseList.get(i));
 			ArrayList<String> tmpList = (ArrayList<String>)allTestcaseList.get(i).get("list");

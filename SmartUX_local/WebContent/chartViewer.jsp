@@ -1,79 +1,23 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@page import="java.util.ArrayList"%>
 <%@page import="java.util.HashMap"%>
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="com.common.*" %>
 <%@ include file="dbConnection.jsp" %>
 <%!
 	static final String PACKAGE_NAME = "com.skp.launcher";
-
-public ArrayList<HashMap<String, String>> selectValue(Connection conn, String tableName, String pullRequestId, String buildCount, ArrayList<HashMap<String, String>> array)
-{
-	Statement stmt = null;
-	ResultSet rs = null;
-	String query = null;
-	HashMap<String, String> hashmap = null;
-	
-	try
-	{
-		stmt = conn.createStatement();
-		/* query = "select scenario, value, date \n";
-		query += "	from "+tableName+" \n";
-		query += "	where build_number = '"+buildNumber+"' \n";
-		if(buildDate != null && buildDate.length() > 0)
-		{
-			query += "		and date <= date_format('"+buildDate+"', '%Y-%m-%d %H:%i:%s') \n";
-		}
-		query += "	group by scenario \n";
-		query += "	order by date desc"; */
-		
-		query = "select scenario, round(value, 3) value, date, concat(pull_request_id,'_',build_count) AS build_count from "+tableName+"\n";
-		query += "  where pull_request_id = '"+pullRequestId+"' \n";
-		if(buildCount != null && buildCount.length() > 0)
-		{
-			query += "  and build_count = '"+buildCount+"' \n"; 
-		}
-		query += "  order by pull_request_id, build_count";
-		
-		rs = stmt.executeQuery(query);
-		
-		while(rs.next())
-		{
-			hashmap = new HashMap<String, String>();
-			hashmap.put("scenario", rs.getString("scenario"));
-			hashmap.put("value", rs.getString("value"));
-			hashmap.put("date", rs.getString("date"));
-			hashmap.put("build_count", rs.getString("build_count"));
-			array.add(hashmap);
-		}
-	}
-	catch(Exception e)
-	{
-		e.printStackTrace();
-	}
-	finally
-	{
-		try
-		{
-			if(stmt != null) stmt.close();
-		}
-		catch(SQLException e2)
-		{
-			e2.printStackTrace();
-		}
-	}
-	
-	return array;
-			
-}
 %>
 <%
 	request.setCharacterEncoding("utf-8");
 	String tableName = request.getParameter("tableName");
 	String scenario = request.getParameter("scenario");
+	String version = request.getParameter("version");
 	String sdate = request.getParameter("sdate");
 	String edate = request.getParameter("edate");
 	String pullRequestId = request.getParameter("pullRequestId");
 	String buildCount = request.getParameter("buildCount");
 	String[] scenarioArr = {};
+	
+	DBUtils db = new DBUtils();
 	
 	/* buildnumber 해당 값 */
 	ArrayList<HashMap<String, String>> buildNumberList = new ArrayList<HashMap<String, String>>();
@@ -96,7 +40,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 	
 	if(pullRequestId != null && pullRequestId.length() > 0)
 	{
-		selectValue(conn, tableName, pullRequestId, buildCount, buildNumberList);
+		db.selectValue(conn, tableName, pullRequestId, buildCount, buildNumberList);
 	}
 	
 %>
@@ -154,7 +98,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     				{
     					//---------------------------------
     					int on = 1;
-						sb.append(" SELECT TBL1.ROWNUM AS rownum	\n");
+						sb.append(" SELECT @ROWNUM := @ROWNUM+1 AS rownum	\n");
 						/* sb.append("        , build.pull_request_id  \n"); */
 						for(int i = 1; i < scenarioArr.length; i++)
 						{
@@ -168,6 +112,10 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"'	\n");
 							sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"'	\n");
 							sb.append("			AND pull_request_id != ''	\n");
+							if(version != null && version != "" && !version.equals("all"))
+							{
+								sb.append("		 			AND VERSION = '" +version+"'  \n");
+							}
 							if(sdate != null && sdate != "")
 							{
 								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
@@ -181,6 +129,10 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 							sb.append("			WHERE PACKAGE_NAME = '"+PACKAGE_NAME+"' 	\n");
 							sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"' 	\n");
 							sb.append("			AND pull_request_id != '' 	\n");
+							if(version != null && version != "" && !version.equals("all"))
+							{
+								sb.append("		 			AND VERSION = '" +version+"'  \n");
+							}
 							if(sdate != null && sdate != "")
 							{
 								sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
@@ -198,19 +150,22 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 						for(int i = 1; i < scenarioArr.length; i++)
 						{
 							sb.append("	(                                               \n");
-							sb.append("		SELECT @ROWNUM"+i+" := @ROWNUM"+i+" +1 AS ROWNUM	\n");
-							sb.append("			 , "+tableName+".device_info                               	\n");
+							sb.append("		SELECT "+tableName+".device_info                               	\n");
 							sb.append("			 , "+tableName+".value                               	\n");
 							sb.append("			 , "+tableName+".date                                	\n");
 							sb.append("			 , "+tableName+".version                                	\n");
 							sb.append("      	 , "+tableName+".pull_request_id				\n");
 							sb.append("      	 , "+tableName+".build_count				\n");
-							sb.append("			FROM "+tableName+", (SELECT @ROWNUM"+i+" := 0) R      	\n");
+							sb.append("			FROM "+tableName+"      	\n");
 							sb.append(" 	, ( SELECT scenario, version, date, pull_request_id, MAX(BUILD_COUNT) build_count \n");
 	    					sb.append(" 		FROM "+tableName);
 	    					sb.append("         WHERE  PACKAGE_NAME='"+PACKAGE_NAME+"'  \n");
 	    					sb.append("			AND SCENARIO = '"+scenarioArr[i].substring(0, scenarioArr[i].indexOf("("))+"' 	\n");
 	    					sb.append(" 					AND pull_request_id != ''  \n");
+	    					if(version != null && version != "" && !version.equals("all"))
+							{
+								sb.append("		 			AND VERSION = '" +version+"'  \n");
+							}
 	    					if(sdate != null && sdate != "")
 	    					{
 	    						sb.append("		AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
@@ -244,6 +199,7 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
 								sb.append(" LEFT JOIN 		\n");
 							}
 						}
+						sb.append("  , (SELECT @ROWNUM := 0) R");
     					//---------------------------------
     				}
     				else
@@ -254,6 +210,10 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     					sb.append("		 			WHERE PACKAGE_NAME='"+PACKAGE_NAME+"' \n"); 
     					sb.append("		 				AND SCENARIO = '"+scenario.substring(0, scenario.indexOf("("))+"' \n");
     					sb.append("						AND pull_request_id != ''  \n");
+    					if(version != null && version != "" && !version.equals("all"))
+						{
+							sb.append("		 			AND VERSION = '" +version+"'  \n");
+						}
     					if(sdate != null && sdate != "")
     					{
     						sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");
@@ -267,6 +227,10 @@ public ArrayList<HashMap<String, String>> selectValue(Connection conn, String ta
     					sb.append("		 			WHERE PACKAGE_NAME='"+PACKAGE_NAME+"'   \n");
     					sb.append("		 				AND SCENARIO = '"+scenario.substring(0, scenario.indexOf("("))+"'  \n");
     					sb.append("						AND pull_request_id != ''  \n");
+    					if(version != null && version != "" && !version.equals("all"))
+						{
+							sb.append("		 			AND VERSION = '" +version+"'  \n");
+						}
     					if(sdate != null && sdate != "")
     					{
     						sb.append("					AND DATE_FORMAT(date, '%Y-%m-%d') >= DATE_FORMAT('"+sdate+"', '%Y-%m-%d') \n");

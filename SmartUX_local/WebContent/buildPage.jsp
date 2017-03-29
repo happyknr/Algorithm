@@ -4,6 +4,7 @@
 <%@ page import="java.util.HashMap"%>
 <%@ page import="java.util.ArrayList"%>
 <%@ include file="dbConnection.jsp" %>
+<%@ page import="com.common.*" %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <%!
 	static final String PACKAGE_NAME = "com.skp.launcher";
@@ -13,154 +14,6 @@
 	static final String E2E_TABLE_NAME = "e2e";
 	static final String AGING_TABLE_NAME = "aging";
 	static final String UX_TABLE_NAME = "ux";
-
- 	public ArrayList<HashMap<String, String>> SelectBuildInfo(Connection conn, String tableName, ArrayList<HashMap<String, String>> arrName)
-	{
-		String query = "";
-		Statement stmt = null;
-		ResultSet rs = null;
-		
-		HashMap<String, String> tmpMap = null;
-		
-		try
-		{
-			stmt = conn.createStatement();
-			
-			//----------------------------
-			/* select build.* from build,
-	(select pull_request_id, max(build_count), max(start_time) start_time from build group by pull_request_id order by max(start_time) desc) build_idx
-	where build.pull_request_id = build_idx.pull_request_id
-	order by build_idx.start_time desc, build.build_count desc */			
-			//----------------------------
-			
-			/* query = "select pull_request_id, \n";
-			if(tableName.equals(UX_TABLE_NAME))
-			{
-				query += " log_path,  \n";
-			}
-			query += " build_count from "+tableName+" where pull_request_id != '' group by pull_request_id, build_count order by date desc"; */
-			
-			/* query = "select "+tableName+".pull_request_id, \n";
-			if(tableName.equals(UX_TABLE_NAME))
-			{
-				query += " log_path,  \n";
-			}
-			query += tableName+".build_count \n";
-			query += "from "+tableName+", \n";
-			query += "(select @rownum := @rownum+1 as rownum, pull_request_id, date from "+tableName+", (select @rownum := 0) R group by pull_request_id order by date desc) temp \n";
-			query += "where "+tableName+".pull_request_id != '' \n";
-			query += " and "+tableName+".pull_request_id = temp.pull_request_id \n";
-			query += " group by pull_request_id, build_count \n";
-			query += "order by rownum desc, "+tableName+".date desc"; */
-			
-			
-			query = " select distinct("+tableName+".pull_request_id), \n";
-			if(tableName.equals(UX_TABLE_NAME))
-			{
-				query += " log_path,  \n";
-			}
-			query += " "+tableName+".build_count  from    \n";
-			query += " ( \n";
-			query += " 	select @rownum := @rownum+1 as rownum, pull_request_id, build_count, start_time \n";
-			query += " 	from  \n";
-			query += " 	( \n";
-			query += " 	select build.* from build,  \n";
-			query += " 		(select pull_request_id, max(build_count), max(start_time) start_time from build group by pull_request_id order by max(start_time) desc) build_idx \n";
-			query += " 		where build.pull_request_id = build_idx.pull_request_id \n";
-			query += " 		order by build_idx.start_time desc, build.build_count desc \n";
-			query += " 	) build, (select @rownum := 0) R \n";
-			query += " ) build, "+tableName+" \n";
-			query += " where build.pull_request_id = "+tableName+".pull_request_id COLLATE utf8_unicode_ci  \n";
-			query += " and build.build_count = "+tableName+".build_count COLLATE utf8_unicode_ci \n";
-			query += " order by rownum \n";
-			
-			//System.out.println(query);
-			
-			rs = stmt.executeQuery(query);
-
-			while(rs.next())
-			{
-				tmpMap = new LinkedHashMap<String, String>();
-				tmpMap.put("pull_request_id", rs.getString("pull_request_id"));
-				tmpMap.put("build_count", rs.getString("build_count"));
-				if(tableName.equals(UX_TABLE_NAME) && rs.getString("log_path") != null && rs.getString("log_path").length() > 0)
-				{
-					String log_Path = rs.getString("log_path");
-					//System.out.println(log_Path);
-					tmpMap.put("log_path", log_Path.substring(log_Path.lastIndexOf(DEFUALT_PATH)+DEFUALT_PATH.length(), log_Path.length()));
-				}
-				arrName.add(tmpMap);
-			} 
-			
-		}
-		catch(SQLException e)
-		{
-			e.printStackTrace();
-		}
-		finally
-		{
-			try 
-			{
-				stmt.close();
-			}
-			catch (SQLException e) 
-			{
-				e.printStackTrace();
-			}
-		}
-			
-		return arrName;
-	}
- 	
- 	public ArrayList<HashMap<String, String>> chartQuery(Connection conn, String tableName, ArrayList<HashMap<String, String>> arrName)
-	{
-		String query = "";
-		Statement stmt = null;
-		ResultSet rs = null;
-		
-		HashMap<String, String> tmpMap = null;
-		
-		try
-		{
-			stmt = conn.createStatement();
-			
-			query = "select distinct(scenario) scenario, round(avg(value), 3) average, count(scenario) from "+tableName+" where package_name = '"+PACKAGE_NAME+"' and pull_request_id != '' group by scenario order by count(scenario) desc";
-			//System.out.println(tableName + " query : " + query);
-			rs = stmt.executeQuery(query);
-			
-			while(rs.next())
-			{
-				tmpMap = new HashMap<String, String>();
-				tmpMap.put("scenario", rs.getString("scenario"));
-				tmpMap.put("average", "("+rs.getString("average")+")");
-				//System.out.println("["+tableName+"] scenario : " + rs.getString("scenario") + " / average : " + rs.getString("average"));
-				arrName.add(tmpMap);
-				
-				/* 	System.out.println("-------------------------");
-					System.out.println(tmpMap.get("scenario"));
-					System.out.println(tmpMap.get("average"));
-					System.out.println("-------------------------"); */
-			}
-			
-		}
-		catch(SQLException e)
-		{
-			e.printStackTrace();
-		}
-		finally
-		{
-			try 
-			{
-				stmt.close();
-			}
-			catch (SQLException e) 
-			{
-				e.printStackTrace();
-			}
-		}
-		
-		return arrName;
-	}
  	
 %>
 <%
@@ -175,6 +28,8 @@
 	{
 		tableName = E2E_TABLE_NAME;
 	}
+	
+	DBUtils db = new DBUtils();
 
 	//System.out.println("tableName : ["+tableName+"]");
 	/* build */
@@ -182,9 +37,9 @@
 	ArrayList<HashMap<String, String>> axBuildInfoList = new ArrayList<HashMap<String, String>>();
 	ArrayList<HashMap<String, String>> uxBuildInfoList = new ArrayList<HashMap<String, String>>();
 	
-	exBuildInfoList = SelectBuildInfo(conn, E2E_TABLE_NAME, exBuildInfoList);
-	axBuildInfoList = SelectBuildInfo(conn, AGING_TABLE_NAME, axBuildInfoList);
-	uxBuildInfoList = SelectBuildInfo(conn, UX_TABLE_NAME, uxBuildInfoList); 
+	db.SelectBuildInfo(conn, E2E_TABLE_NAME, PACKAGE_NAME, exBuildInfoList);
+	db.SelectBuildInfo(conn, AGING_TABLE_NAME, PACKAGE_NAME, axBuildInfoList);
+	db.SelectBuildInfo(conn, UX_TABLE_NAME, PACKAGE_NAME, uxBuildInfoList); 
 	
 	/* 응답시간 */
 	ArrayList<HashMap<String, String>> e2eScenarioList = new ArrayList<HashMap<String, String>>();
@@ -196,9 +51,12 @@
 		tableName = "e2e";
 	}
 	
-	chartQuery(conn, E2E_TABLE_NAME, e2eScenarioList);
-	chartQuery(conn, AGING_TABLE_NAME, agingScenarioList);
-
+	db.getScenario(conn, E2E_TABLE_NAME, PACKAGE_NAME, e2eScenarioList);
+	db.getScenario(conn, AGING_TABLE_NAME, PACKAGE_NAME, agingScenarioList);
+	
+	ArrayList<String> e2eVersionArr = db.getBuildVersion(PACKAGE_NAME, E2E_TABLE_NAME);
+	ArrayList<String> agingVersionArr =db.getBuildVersion(PACKAGE_NAME, AGING_TABLE_NAME);
+	
 %>
 
 <html> 
@@ -215,12 +73,13 @@
 	var previousTab = "";
 	
 	/* 차트 관련 iframe에 파라메터 넘기는 함수 */
-	function sendToChartViewer(frameName, tableName, scenario, sdate, edate, pullRequestId, buildCount)
+	function sendToChartViewer(frameName, tableName, scenario, version, sdate, edate, pullRequestId, buildCount)
 	{
 		//alert("frameName : " + frameName + "\n tableName : " + tableName + "\n scenario : " + scenario + "\n buildNumber : " + buildNumber);
 		var frm = document.chartPageForm;
 		frm.tableName.value = tableName;
 		frm.scenario.value = scenario;
+		frm.version.value = version;
 		frm.sdate.value = sdate;
 		frm.edate.value = edate;
 		frm.pullRequestId.value = pullRequestId;
@@ -267,8 +126,8 @@
 		//else
 		{
 		%>
-			sendToChartViewer('exFrame', 'e2e', $("#selE2eSubMenu option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
-			sendToChartViewer('axFrame', 'aging', $("#selAgingSubMenu option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
+			sendToChartViewer('exFrame', 'e2e', $("#selE2eSubMenu option:selected").val(), $("#selE2eVersion option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
+			sendToChartViewer('axFrame', 'aging', $("#selAgingSubMenu option:selected").val(), $("#selAgingVersion option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
 			if('<%=pBuildCount%>' == null)
 			{
 				sendToResultViewer('uxFrame', $('#selUxBuildNumber option:selected').val(), null);
@@ -284,70 +143,84 @@
 		$("#selExBuildNumber").change(function()
 		{
 			tabName = $(".active").children().attr("id");
-			sendToChartViewer('exFrame', tabName, $("#selE2eSubMenu option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
+			sendToChartViewer('exFrame', tabName, $("#selE2eSubMenu option:selected").val(), $("#selE2eVersion option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
 		});
 		
 		// 응답시간탭 build_date 클릭시 이벤트
 		$("#selExBuildCount").change(function()
 		{
 			tabName = $(".active").children().attr("id");
-			sendToChartViewer('exFrame', tabName, $("#selE2eSubMenu option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
+			sendToChartViewer('exFrame', tabName, $("#selE2eSubMenu option:selected").val(), $("#selE2eVersion option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
 		});
 		
 		// 메모리탭 build_number 클릭시 이벤트
 		$("#selAxBuildNumber").change(function()
 		{
 			tabName = $(".active").children().attr("id");
-			sendToChartViewer('axFrame', tabName, $("#selAgingSubMenu option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
+			sendToChartViewer('axFrame', tabName, $("#selAgingSubMenu option:selected").val(), $("#selAgingVersion option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
 		});
 		
 		// 메모리탭 build_date 클릭시 이벤트
 		$("#selAxBuildCount").change(function()
 		{
 			tabName = $(".active").children().attr("id");
-			sendToChartViewer('axFrame', tabName, $("#selAgingSubMenu option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
+			sendToChartViewer('axFrame', tabName, $("#selAgingSubMenu option:selected").val(), $("#selAgingVersion option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
 		});
 		
 		// 응답시간탭 시나리오 클릭시 이벤트 
  		$("#selE2eSubMenu").change(function()
 		{
 			tabName = $(".active").children().attr("id");
-			sendToChartViewer('exFrame', tabName, $("#selE2eSubMenu option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
+			sendToChartViewer('exFrame', tabName, $("#selE2eSubMenu option:selected").val(), $("#selE2eVersion option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
 		});
 		
 		// 메모리탭 시나리오 클릭시 이벤트 
 		$("#selAgingSubMenu").change(function()
 		{
 			tabName = $(".active").children().attr("id");
-			sendToChartViewer('axFrame', tabName, $("#selAgingSubMenu option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
+			sendToChartViewer('axFrame', tabName, $("#selAgingSubMenu option:selected").val(), $("#selAgingVersion option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
+		});
+		
+		// 응답시간탭 버전 클릭시 이벤트 
+ 		$("#selE2eVersion").change(function()
+		{
+			tabName = $(".active").children().attr("id");
+			sendToChartViewer('exFrame', tabName, $("#selE2eSubMenu option:selected").val(), $("#selE2eVersion option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
+		});
+		
+		// 메모리탭 버전 클릭시 이벤트 
+		$("#selAgingVersion").change(function()
+		{
+			tabName = $(".active").children().attr("id");
+			sendToChartViewer('axFrame', tabName, $("#selAgingSubMenu option:selected").val(), $("#selAgingVersion option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
 		});
 		
 		// 응답시간탭 시작일자 클릭시 이벤트
 		$("input[name=sDate1]").change(function()
 		{
 			tabName = $(".active").children().attr("id");
-			sendToChartViewer('exFrame', tabName, $("#selE2eSubMenu option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
+			sendToChartViewer('exFrame', tabName, $("#selE2eSubMenu option:selected").val(), $("#selE2eVersion option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
 		});
 		
 		// 메모리탭 시작일자 클릭시 이벤트
 		$("input[name=sDate2]").change(function()
 		{
 			tabName = $(".active").children().attr("id");
-			sendToChartViewer('axFrame', tabName, $("#selAgingSubMenu option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
+			sendToChartViewer('axFrame', tabName, $("#selAgingSubMenu option:selected").val(), $("#selAgingVersion option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
 		});
 		
 		// 응답시간탭 종료일자 클릭시 이벤트
 		$("input[name=eDate1]").change(function()
 		{
 			tabName = $(".active").children().attr("id");
-			sendToChartViewer('exFrame', tabName, $("#selE2eSubMenu option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
+			sendToChartViewer('exFrame', tabName, $("#selE2eSubMenu option:selected").val(), $("#selE2eVersion option:selected").val(), $("input[name=sDate1]").val(), $("input[name=eDate1]").val(), $("#selExBuildNumber option:selected").val(), $("#selExBuildCount option:selected").val());
 		});
 		
 		// 메모리탭 종료일자 클릭시 이벤트
 		$("input[name=eDate2]").change(function()
 		{
 			tabName = $(".active").children().attr("id");
-			sendToChartViewer('axFrame', tabName, $("#selAgingSubMenu option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
+			sendToChartViewer('axFrame', tabName, $("#selAgingSubMenu option:selected").val(), $("#selAgingVersion option:selected").val(), $("input[name=sDate2]").val(), $("input[name=eDate2]").val(), $("#selAxBuildNumber option:selected").val(), $("#selAxBuildCount option:selected").val());
 		});
 		
 		// UI탭 build number 클릭시 이벤트 
@@ -435,6 +308,7 @@
 	<form name="chartPageForm" action="chartViewer.jsp" method="POST">
 		<input type="hidden" name="tableName" value="">
 		<input type="hidden" name="scenario" value="">
+		<input type="hidden" name="version" value="">
 		<input type="hidden" name="sdate" value="">
 		<input type="hidden" name="edate" value="">
 		<input type="hidden" name="pullRequestId" value="">
@@ -654,6 +528,18 @@
 				%>
 			</select>
 			
+			<!-- version 조회 -->
+			<select name="e2eVersion" id="selE2eVersion">
+				<option value="" disabled>APP VERSION</option>
+				<option value="" >all</option>
+				<%
+				for(int i = 0; i < e2eVersionArr.size(); i++)
+				{
+					out.print("<option value='"+e2eVersionArr.get(i)+"'>"+e2eVersionArr.get(i)+"</option>");
+				}
+				%>
+			</select>
+			
 			<!-- 날짜 조회 -->
 			<input type="date" name="sDate1" value="">~<input type="date" name="eDate1" value="">
 		</div>
@@ -681,6 +567,18 @@
 					{
 						out.print("<option value='"+agingScenarioList.get(i).get("scenario")+agingScenarioList.get(i).get("average")+"'>"+agingScenarioList.get(i).get("scenario")+"</option>");
 					}
+				}
+				%>
+			</select>
+			
+			<!-- version 조회 -->
+			<select name="agingVersion" id="selAgingVersion">
+				<option value="" disabled>APP VERSION</option>
+				<option value="" >all</option>
+				<%
+				for(int i = 0; i < agingVersionArr.size(); i++)
+				{
+					out.print("<option value='"+agingVersionArr.get(i)+"'>"+agingVersionArr.get(i)+"</option>");
 				}
 				%>
 			</select>
