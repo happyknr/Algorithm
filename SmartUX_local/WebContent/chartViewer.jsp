@@ -1,3 +1,4 @@
+<%@page import="java.util.Map"%>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@page import="java.util.ArrayList"%>
 <%@page import="java.util.HashMap"%>
@@ -21,7 +22,10 @@
 	
 	/* buildnumber 해당 값 */
 	ArrayList<HashMap<String, String>> buildNumberList = new ArrayList<HashMap<String, String>>();
+	ArrayList<Map<String, String>> subMenuArr = db.getScenario(PACKAGE_NAME, tableName, version, sdate, edate);
 	
+	for(int i = 0; i < subMenuArr.size(); i++) 
+	System.out.println(subMenuArr.get(i).get("SCENARIO"));
 	//System.out.println("chartViewer.jsp ] scenario : " + scenario);
 	
 	if(scenario != null && scenario != "")
@@ -389,6 +393,7 @@
 				tooltip: {isHtml: true},
 		    	width: 1400, /*'100%'*/
 		    	height: 500,
+		    	colors: ['#DC3912','#3366CC','#FF9900'],
 		    	hAxis:
 				{
 					gridlines: {count:0}
