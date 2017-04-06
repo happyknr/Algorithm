@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.naming.spi.DirStateFactory.Result;
+
 public class DBUtils {
 	
 	private static final String UX_TABLE_NAME = "UX";
@@ -26,9 +28,15 @@ public class DBUtils {
 	{
 		try
 		{
-			String url = "jdbc:mysql://172.21.85.68:3306/qadb";
+			/*String url = "jdbc:mysql://172.21.85.68:3306/qadb";
 			String id = "qadb_svc";
-		  	String pw = "!qad.blxc2#";
+		  	String pw = "!qad.blxc2#";*/
+			String url = "jdbc:mysql://192.168.0.35:3306/test";
+			String id = "knr";
+			String pw = "skfo1234";
+			/*String url = "jdbc:mysql://192.168.0.19:3306/qadb";
+			String id = "qadb_svc";
+		  	String pw = "!qad.blxc2#";*/
 			Class.forName("com.mysql.jdbc.Driver");
 			conn = DriverManager.getConnection(url,id,pw);
 		}
@@ -67,16 +75,104 @@ public class DBUtils {
 			dbConn();
 			stmt = conn.createStatement();
 			
-			query = "insert into test(contents) values ('"+contents+"')";
+			query = "insert into test(contents, date) values ('"+contents+"', date_format(now(), '%Y-%m-%d %H:%i:%s'))";
 			
-			stmt.executeQuery(query);
+			stmt.executeUpdate(query); // executeQuery(query);
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace();
 			return FAIL;
 		}
+		finally
+		{
+			try
+			{
+				if(stmt != null) stmt.close();
+			}
+			catch(SQLException e)
+			{
+				e.printStackTrace();
+			}
+		}
 		
+		return SUCCESS;
+	}
+	
+	public HashMap<String, String> getReport()
+	{
+		Statement stmt = null;
+		String query = null;
+		ResultSet rs = null;
+		HashMap<String, String> hm = null;
+		
+		try 
+		{
+			dbConn();
+			stmt = conn.createStatement();
+			
+			query = "select id, contents from test order by id desc limit 1";
+			
+			rs = stmt.executeQuery(query);
+			
+			while(rs.next()) {
+				hm = new HashMap<String, String>();
+				hm.put("id", rs.getString("id"));
+				hm.put("contents", rs.getString("contents"));
+			}
+		} 
+		catch(Exception e) 
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if(stmt != null) stmt.close();
+			}
+			catch(SQLException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		return hm;
+	}
+	
+	public int updateReport(String id, String contents)
+	{
+		Statement stmt = null;
+		String query = null;
+		
+		try 
+		{
+			dbConn();
+			stmt = conn.createStatement();
+			
+			query = "update test set contents=\""+contents+"\" where id = " + id;
+			
+			System.out.println("update : " + query);
+			
+			stmt.executeUpdate(query);
+			
+		} 
+		catch(Exception e) 
+		{
+			e.printStackTrace();
+			return FAIL;
+		}
+		finally
+		{
+			try
+			{
+				if(stmt != null) stmt.close();
+			}
+			catch(SQLException e)
+			{
+				e.printStackTrace();
+			}
+		}
 		return SUCCESS;
 	}
 	
@@ -156,7 +252,7 @@ public class DBUtils {
 			query += " 		, COUNT(SCENARIO) CNT \n";
 			query += "	FROM "+tabName+" WHERE PACKAGE_NAME = '"+packageName+"'";
 			query += "			AND value != 0 \n";
-			if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
+			/*if(pappVersion != null && pappVersion != "" && !pappVersion.equals("all"))
 			{
 				query += "	 	AND VERSION = '" +pappVersion+"'  \n";
 			}
@@ -167,10 +263,11 @@ public class DBUtils {
 			if(edate != null && edate != "")
 			{
 				query += "		AND DATE_FORMAT(date, '%Y-%m-%d') <= DATE_FORMAT('"+edate+"', '%Y-%m-%d') \n";
-			}
+			}*/
 			query += " 	GROUP BY SCENARIO \n";
 			query += "  ORDER BY CNT DESC \n";
 			
+			System.out.println("getScenario() query : " + query);
 			rs = stmt.executeQuery(query);
 			
 			while(rs.next())

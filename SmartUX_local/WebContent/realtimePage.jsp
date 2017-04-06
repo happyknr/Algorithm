@@ -254,7 +254,7 @@ try
 
 
 	stmt = conn.createStatement();
-	if( psubMenu != null && psubMenu.length() != 0 && psubMenu != "" )
+	if( psubMenu != null && psubMenu.length() != 0 && psubMenu != "")
 	{
 		if( psubMenu.equals("all") )
 		{
@@ -696,8 +696,16 @@ finally
 		}
 	};
       
-	var chart = new google.visualization.LineChart(document.getElementById('linechart'));
-	chart.draw(data, options);
+	
+	if(data.getNumberOfRows() == 0)
+	{
+	    $("#linechart").append("<center><h1>No data</h1></center>")
+	}
+	else
+	{
+		var chart = new google.visualization.LineChart(document.getElementById('linechart'));
+		chart.draw(data, options);
+	}
 }
     
 </script>
